@@ -1,10 +1,16 @@
 export type ChannelType = 'listed' | 'unlisted';
 
-export interface FileInfo {
+export interface UploadInfo {
   id: number;
   created: string;
   is_mozilla_signed_extension: boolean;
-  status: 'public' | 'deleted' | 'disabled' | 'nominated' | 'incomplete' | 'unreviewed';
+  status:
+    | 'public'
+    | 'deleted'
+    | 'disabled'
+    | 'nominated'
+    | 'incomplete'
+    | 'unreviewed';
   url: string;
   hash: string;
 }
@@ -14,7 +20,7 @@ export interface VersionInfo {
   channel: ChannelType;
   version: string;
   source: string;
-  file: FileInfo;
+  file: UploadInfo;
 }
 
 export interface VersionListResponse {
@@ -39,4 +45,22 @@ export interface SignAddonParam {
   channel?: ChannelType;
   distFile?: string;
   sourceFile?: string;
+}
+
+export interface FileInfo {
+  download_url: string;
+  hash: string;
+  signed: boolean;
+}
+
+export interface VersionStatus {
+  guid: string;
+  active: boolean;
+  automated_signing: boolean;
+  files: FileInfo[];
+  passed_review: boolean;
+  processed: boolean;
+  reviewed: string;
+  valid: boolean;
+  version: string;
 }

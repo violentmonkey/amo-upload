@@ -1,11 +1,22 @@
 import { basename } from 'path';
 import fetch, { fileFrom, FormData, RequestInit } from 'node-fetch';
 import jwt from 'jsonwebtoken';
-import type { ChannelType, UploadResponse, VersionInfo, VersionListResponse, SignAddonParam } from './types';
+import type {
+  ChannelType,
+  UploadResponse,
+  VersionInfo,
+  VersionListResponse,
+  SignAddonParam,
+  VersionStatus,
+} from './types';
 
 class FatalError extends Error {}
 
-async function poll<T>(check: () => Promise<T>, interval = 3000, maxRetry = 10) {
+async function poll<T>(
+  check: () => Promise<T>,
+  interval = 3000,
+  maxRetry = 10
+) {
   let lastError: unknown;
   for (let i = 0; i < maxRetry; i += 1) {
     await delay(interval);
@@ -20,7 +31,7 @@ async function poll<T>(check: () => Promise<T>, interval = 3000, maxRetry = 10) 
 }
 
 function delay(time: number) {
-  return new Promise(resolve => setTimeout(resolve, time));
+  return new Promise((resolve) => setTimeout(resolve, time));
 }
 
 export class AMOClient {
@@ -31,7 +42,7 @@ export class AMOClient {
   constructor(
     private apiKey: string,
     private apiSecret: string,
-    public apiPrefix = 'https://addons.mozilla.org',
+    public apiPrefix = 'https://addons.mozilla.org'
   ) {
     if (!apiKey || !apiSecret) {
       throw new Error('apiKey and apiSecret are required');
@@ -57,7 +68,7 @@ export class AMOClient {
         ...opts?.headers,
       },
     });
-    const data = await res.json() as T;
+    const data = (await res.json()) as T;
     if (!res.ok) throw { res, data };
     return data;
   }
@@ -66,62 +77,90 @@ export class AMOClient {
     const formData = new FormData();
     formData.set('upload', await fileFrom(distFile), basename(distFile));
     formData.set('channel', channel);
-    const { uuid }: UploadResponse = await this.request('/api/v5/addons/upload/', {
-      method: 'POST',
-      body: formData,
-    });
+    const { uuid }: UploadResponse = await this.request(
+      '/api/v5/addons/upload/',
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
     await poll(async () => {
-      const data: UploadResponse = await this.request(`/api/v5/addons/upload/${uuid}/`);
+      const data: UploadResponse = await this.request(
+        `/api/v5/addons/upload/${uuid}/`
+      );
       if (!data.processed) throw new Error('Not processed yet');
       if (!data.valid) throw new FatalError('Not valid');
     });
     return uuid;
   }
 
-  async createVersion(addonId: string, channel: ChannelType, distFile: string, sourceFile?: string) {
+  async createVersion(
+    addonId: string,
+    channel: ChannelType,
+    distFile: string,
+    sourceFile?: string
+  ) {
     const uploadUuid = await this.uploadFile(distFile, channel);
     const formData = new FormData();
     if (sourceFile) {
       formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
     }
     formData.set('upload', uploadUuid);
-    const versionInfo: VersionInfo = await this.request(`/api/v5/addons/addon/${addonId}/versions/`, {
-      method: 'POST',
-      body: formData,
-    });
+    const versionInfo: VersionInfo = await this.request(
+      `/api/v5/addons/addon/${addonId}/versions/`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
     return versionInfo;
   }
 
-  async updateVersion(addonId: string, versionInfo: VersionInfo, sourceFile: string) {
+  async updateVersion(
+    addonId: string,
+    versionInfo: VersionInfo,
+    sourceFile: string
+  ) {
     const formData = new FormData();
     formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
-    const updated: VersionInfo = await this.request(`/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`, {
-      method: 'PATCH',
-      body: formData,
-    });
+    const updated: VersionInfo = await this.request(
+      `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
+      {
+        method: 'PATCH',
+        body: formData,
+      }
+    );
     return updated;
   }
 
   async getVersions(addonId: string) {
-    const result: VersionListResponse = await this.request(`/api/v5/addons/addon/${addonId}/versions/?filter=all_with_unlisted`);
+    const result: VersionListResponse = await this.request(
+      `/api/v5/addons/addon/${addonId}/versions/?filter=all_with_unlisted`
+    );
     return result;
+  }
+
+  async getVersionStatus(addonId: string, version: string) {
+    const result: VersionStatus = await this.request(
+      `/api/v5/addons/${addonId}/versions/${version}/`
+    );
+    return result;
+  }
+
+  getSignedFile(versionStatus?: VersionStatus) {
+    const file = versionStatus?.files?.[0];
+    if (file?.signed) return file;
   }
 
   async findVersion(addonId: string, version: string, firstPageOnly = true) {
     let { results, next } = await this.getVersions(addonId);
     let matched: VersionInfo;
     while (!matched) {
-      matched = results.find(item => item.version === version);
-      if (!matched && next && !firstPageOnly) {
-        ({ results, next } = await this.request(next));
-      }
+      matched = results.find((item) => item.version === version);
+      if (matched || !next || firstPageOnly) break;
+      ({ results, next } = await this.request(next));
     }
     return matched;
-  }
-
-  getDownloadUrl(versionInfo: VersionInfo) {
-    const { file } = versionInfo;
-    if (file.is_mozilla_signed_extension) return file.url;
   }
 
   getJWT(ttl: number) {
@@ -149,15 +188,37 @@ export async function signAddon({
   sourceFile,
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret);
-  let versionInfo = await client.findVersion(addonId, addonVersion);
-  if (!versionInfo) {
-    if (!distFile) throw new Error('Version not found, please provide your extension distFile');
-    versionInfo = await client.createVersion(addonId, channel, distFile, sourceFile);
-  } else if (!versionInfo.source && sourceFile) {
-    versionInfo = await client.updateVersion(addonId, versionInfo, sourceFile);
+  let versionStatus: VersionStatus;
+
+  try {
+    versionStatus = await client.getVersionStatus(addonId, addonVersion);
+  } catch (err) {
+    if (err.res.status !== 404) throw err;
   }
 
-  const url = client.getDownloadUrl(versionInfo);
-  if (!url) throw new Error('File not signed yet');
-  return url;
+  const file = client.getSignedFile(versionStatus);
+  if (file) return file;
+
+  if (!versionStatus) {
+    if (!distFile)
+      throw new Error('Version not found, please provide distFile');
+    await client.createVersion(addonId, channel, distFile, sourceFile);
+  } else if (sourceFile) {
+    const versionInfo = await client.findVersion(addonId, addonVersion);
+    if (!versionInfo.source) {
+      await client.updateVersion(addonId, versionInfo, sourceFile);
+    }
+  }
+
+  return await poll(
+    async () => {
+      const file = client.getSignedFile(
+        await client.getVersionStatus(addonId, addonVersion)
+      );
+      if (!file) throw new Error('file not signed yet');
+      return file;
+    },
+    15000,
+    4
+  );
 }
