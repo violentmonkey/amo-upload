@@ -43,6 +43,7 @@ const rollupConfig = [
     output: {
       format: 'esm',
       file: `${DIST}/bin.mjs`,
+      banner: '#!/usr/bin/env node'
     },
   },
   {
@@ -58,6 +59,7 @@ const rollupConfig = [
     output: {
       format: 'esm',
       file: `${DIST}/index.mjs`,
+      banner: BANNER,
     },
   },
 ];
@@ -68,9 +70,6 @@ rollupConfig.forEach((item) => {
     // If set to false, circular dependencies and live bindings for external imports won't work
     externalLiveBindings: false,
     ...item.output,
-    ...BANNER && {
-      banner: BANNER,
-    },
   };
 });
 
