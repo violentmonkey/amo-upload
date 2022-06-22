@@ -16,7 +16,9 @@
     "prepare": "husky install"
   },
   "bin": "dist/bin.mjs",
+  "main": "dist/index.mjs",
   "module": "dist/index.mjs",
+  "exports": "./dist/index.mjs",
   "type": "module",
   "files": [
     "dist",
