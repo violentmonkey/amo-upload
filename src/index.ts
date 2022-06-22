@@ -186,6 +186,8 @@ export async function signAddon({
   channel = 'listed',
   distFile,
   sourceFile,
+  pollInterval = 15000,
+  pollRetry = 4,
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret);
   let versionStatus: VersionStatus;
@@ -218,7 +220,7 @@ export async function signAddon({
       if (!file) throw new Error('file not signed yet');
       return file;
     },
-    15000,
-    4
+    pollInterval,
+    pollRetry
   );
 }
