@@ -1,0 +1,46 @@
+{
+  "name": "amo-upload",
+  "version": "0.0.0",
+  "description": "Upload add-on to AMO",
+  "author": "Gerald <gera2ld@live.com>",
+  "license": "MIT",
+  "scripts": {
+    "ci": "run-s lint",
+    "lint": "eslint --ext .ts,tsx src",
+    "dev": "rollup -wc rollup.conf.cjs",
+    "clean": "del-cli dist types",
+    "build:js": "cross-env NODE_ENV=production rollup -c rollup.conf.cjs",
+    "build": "run-s ci clean build:types build:js",
+    "prepare": "husky install",
+    "build:types": "tsc -p tsconfig.prod.json"
+  },
+  "bin": "dist/bin.mjs",
+  "module": "dist/index.mjs",
+  "type": "module",
+  "files": [
+    "dist",
+    "types"
+  ],
+  "engines": {
+    "node": ">= 14"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "typings": "types/index.d.ts",
+  "dependencies": {
+    "@babel/runtime": "^7.16.7",
+    "commander": "^9.3.0",
+    "jsonwebtoken": "^8.5.1",
+    "node-fetch": "^3.2.6"
+  },
+  "devDependencies": {
+    "@gera2ld/plaid": "~2.5.0",
+    "@gera2ld/plaid-common-ts": "~2.5.0",
+    "@gera2ld/plaid-rollup": "~2.5.0",
+    "@types/jsonwebtoken": "^8.5.8",
+    "del-cli": "^4.0.1",
+    "husky": "^7.0.4"
+  }
+}
