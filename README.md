@@ -2,7 +2,7 @@
 
 Upload your web extension to [AMO](https://addons.mozilla.org/) and get the download URL after being signed.
 
-Note: This package requires Node.js >= 14 and only provides ES module, see [here] for more details.
+Note: This package requires Node.js >= 14 and only provides ES module, see [here](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c) for more details.
 
 ## Highlights
 
@@ -25,13 +25,15 @@ $ npx amo-upload \
   --source-file path/to/source.zip
 ```
 
+If the file is reviewed and signed, the URL will be printed to the console. Otherwise an error will be thrown.
+
 ### API
 
 ```js
 import { signAddon } from 'amo-upload';
 
 try {
-  const url = await signAddon({
+  const { download_url: url } = await signAddon({
     apiKey,
     apiSecret,
     addonId,
@@ -40,6 +42,7 @@ try {
     distFile: 'path/to/dist.zip',
     sourceFile: 'path/to/source.zip',
   });
+  console.info('The signed file can be downloaded from:', url);
   downloadSignedVersionAndPublish(url);
 } catch (err) {
   console.error('File not signed yet');
