@@ -973,7 +973,7 @@
     "@babel/helper-validator-option" "^7.16.7"
     "@babel/plugin-transform-typescript" "^7.17.12"
 
-"@babel/runtime@^7.12.5", "@babel/runtime@^7.16.7", "@babel/runtime@^7.8.4":
+"@babel/runtime@^7.12.5", "@babel/runtime@^7.18.3", "@babel/runtime@^7.8.4":
   version "7.18.3"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.18.3.tgz#c7b654b57f6f63cf7f8b418ac9ca04408c4579f4"
   integrity sha512-38Y8f7YUhce/K7RMwTp7m0uCumpv9hZkitCbBClqQIow1qSbCvGkcegKOXpEWCQLfWmevgRiWokZ1GkpfhbZug==
@@ -1028,7 +1028,7 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
-"@gera2ld/plaid-common-ts@~2.5.0":
+"@gera2ld/plaid-common-ts@~2.5.1":
   version "2.5.1"
   resolved "https://registry.yarnpkg.com/@gera2ld/plaid-common-ts/-/plaid-common-ts-2.5.1.tgz#0ff0555521fd8b016f1d379485d5b7f513617a61"
   integrity sha512-qE8BY+ZcLboQlyqRMl6WgdUmvHW8CeyTuP1fAA1yaQSQd2hWWE3IXYUa9hh/OzsLx6V3rs0xmLnHUJM59vR21g==
@@ -1055,10 +1055,10 @@
     rollup-plugin-postcss "^4.0.2"
     rollup-plugin-terser "^7.0.2"
 
-"@gera2ld/plaid@~2.5.0":
-  version "2.5.3"
-  resolved "https://registry.yarnpkg.com/@gera2ld/plaid/-/plaid-2.5.3.tgz#0ad07b5cc5901a839c11acbad972bebd335d2d83"
-  integrity sha512-jAjWUlssMgAdGqB+UVsi+f6Fvvi1wFAr7nmRmrGWCfPMK1Sqi9sUoESqBIR2rjBcRFusMWo0GN2bbaQN5nFFbg==
+"@gera2ld/plaid@~2.5.5":
+  version "2.5.5"
+  resolved "https://registry.yarnpkg.com/@gera2ld/plaid/-/plaid-2.5.5.tgz#9075e7d9685394243a81a2cc67de6f8fdd0e4d64"
+  integrity sha512-IRB+snsVxT6NBo5gHvdLBxZIu3pc/Xh8mtOZbmO+UEa2zPOdjNgFV/JRC6gwIIYhIcO5f9hbxBZ36/GbGmwAgA==
   dependencies:
     "@babel/core" "^7.16.5"
     "@babel/eslint-parser" "^7.16.5"
@@ -2556,10 +2556,10 @@ hosted-git-info@^4.0.1:
   dependencies:
     lru-cache "^6.0.0"
 
-husky@^7.0.4:
-  version "7.0.4"
-  resolved "https://registry.yarnpkg.com/husky/-/husky-7.0.4.tgz#242048245dc49c8fb1bf0cc7cfb98dd722531535"
-  integrity sha512-vbaCKN2QLtP/vD4yvs6iz6hBEo6wkSzs8HpRah1Z6aGmF2KW5PdYuAd7uX5a+OyBZHBhd+TFLqgjUgytQr4RvQ==
+husky@^8.0.1:
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/husky/-/husky-8.0.1.tgz#511cb3e57de3e3190514ae49ed50f6bc3f50b3e9"
+  integrity sha512-xs7/chUH/CKdOCs7Zy0Aev9e/dKOMZf3K1Az1nar3tzlv0jfqnYtu235bstsWTmXOR0EfINrPa97yy4Lz6RiKw==
 
 icss-replace-symbols@^1.1.0:
   version "1.1.0"
