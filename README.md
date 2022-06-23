@@ -1,5 +1,9 @@
 # amo-upload
 
+![NPM](https://img.shields.io/npm/v/amo-upload.svg)
+![License](https://img.shields.io/npm/l/amo-upload.svg)
+![Downloads](https://img.shields.io/npm/dt/amo-upload.svg)
+
 Upload your web extension to [AMO](https://addons.mozilla.org/) and get the download URL after being signed.
 
 Note: This package requires Node.js >= 14 and only provides ES module, see [here](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c) for more details.
