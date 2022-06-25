@@ -27,9 +27,10 @@ $ npx amo-upload \
   --channel listed \
   --dist-file path/to/dist.zip \
   --source-file path/to/source.zip
+  --output path/to/my-ext-v1.2.3.xpi
 ```
 
-If the file is reviewed and signed, the URL will be printed to the console. Otherwise an error will be thrown.
+If the file is reviewed and signed, the path it is stored will be printed to the console. Otherwise an error will be thrown.
 
 ### API
 
@@ -37,7 +38,7 @@ If the file is reviewed and signed, the URL will be printed to the console. Othe
 import { signAddon } from 'amo-upload';
 
 try {
-  const { download_url: url } = await signAddon({
+  const output = await signAddon({
     apiKey,
     apiSecret,
     addonId,
@@ -45,9 +46,9 @@ try {
     channel: 'listed',
     distFile: 'path/to/dist.zip',
     sourceFile: 'path/to/source.zip',
+    output: 'path/to/my-ext-v1.2.3.xpi',
   });
-  console.info('The signed file can be downloaded from:', url);
-  downloadSignedVersionAndPublish(url);
+  console.info('The signed file is stored at:', output);
 } catch (err) {
   console.error('File not signed yet');
 }

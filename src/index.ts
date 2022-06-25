@@ -1,4 +1,6 @@
-import { basename } from 'path';
+import { createWriteStream } from 'fs';
+import { stat } from 'fs/promises';
+import { basename, join } from 'path';
 import fetch, { fileFrom, FormData, RequestInit } from 'node-fetch';
 import jwt from 'jsonwebtoken';
 import type {
@@ -8,6 +10,7 @@ import type {
   VersionListResponse,
   SignAddonParam,
   VersionStatus,
+  FileInfo,
 } from './types';
 
 class FatalError extends Error {}
@@ -59,15 +62,19 @@ export class AMOClient {
     }
   }
 
-  async request<T = unknown>(url: string, opts?: RequestInit) {
+  fetch(url: string, opts?: RequestInit) {
     this.updateToken();
-    const res = await fetch(this.apiPrefix + url, {
+    return fetch(url, {
       ...opts,
       headers: {
         ...this.headers,
         ...opts?.headers,
       },
     });
+  }
+
+  async request<T = unknown>(url: string, opts?: RequestInit) {
+    const res = await this.fetch(this.apiPrefix + url, opts);
     const data = (await res.json()) as T;
     if (!res.ok) throw { res, data };
     return data;
@@ -147,9 +154,14 @@ export class AMOClient {
     return result;
   }
 
-  getSignedFile(versionStatus?: VersionStatus) {
+  getSignedFileFromStatus(versionStatus?: VersionStatus) {
     const file = versionStatus?.files?.[0];
     if (file?.signed) return file;
+  }
+
+  async getSignedFile(addonId: string, version: string) {
+    const versionStatus = await this.getVersionStatus(addonId, version);
+    return this.getSignedFileFromStatus(versionStatus);
   }
 
   async findVersion(addonId: string, version: string, firstPageOnly = true) {
@@ -176,6 +188,30 @@ export class AMOClient {
     });
     return token;
   }
+
+  async downloadFile(url: string, output?: string) {
+    const res = await this.fetch(url);
+    const filename = url.split('/').pop() || 'noname';
+    if (output) {
+      try {
+        const stats = await stat(output);
+        if (stats.isDirectory()) {
+          output = join(output, filename);
+        }
+      } catch {
+        // ignore
+      }
+    } else {
+      output = filename;
+    }
+    const stream = createWriteStream(output);
+    await new Promise((resolve, reject) => {
+      res.body.pipe(stream);
+      res.body.on('error', reject);
+      stream.on('finish', resolve);
+    });
+    return output;
+  }
 }
 
 export async function signAddon({
@@ -186,22 +222,20 @@ export async function signAddon({
   channel = 'listed',
   distFile,
   sourceFile,
+  output,
   pollInterval = 15000,
   pollRetry = 4,
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret);
-  let versionStatus: VersionStatus;
+  let signedFile: FileInfo;
 
   try {
-    versionStatus = await client.getVersionStatus(addonId, addonVersion);
+    signedFile = await client.getSignedFile(addonId, addonVersion);
   } catch (err) {
     if (err.res.status !== 404) throw err;
   }
 
-  const file = client.getSignedFile(versionStatus);
-  if (file) return file;
-
-  if (!versionStatus) {
+  if (!signedFile) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
     await client.createVersion(addonId, channel, distFile, sourceFile);
@@ -212,15 +246,14 @@ export async function signAddon({
     }
   }
 
-  return await poll(
+  signedFile = await poll(
     async () => {
-      const file = client.getSignedFile(
-        await client.getVersionStatus(addonId, addonVersion)
-      );
+      const file = await client.getSignedFile(addonId, addonVersion);
       if (!file) throw new Error('file not signed yet');
       return file;
     },
     pollInterval,
     pollRetry
   );
+  return client.downloadFile(signedFile.download_url, output);
 }

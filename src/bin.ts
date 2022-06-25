@@ -20,6 +20,7 @@ program
     '--source-file <sourceFile>',
     'the source file to upload, should be a zip file'
   )
+  .option('--output <output>', 'the file path to save the signed XPI file')
   .action(
     wrapError(async (options) => {
       const missingKeys = [
@@ -34,7 +35,7 @@ program
             missingKeys.join(', ')
         );
       }
-      const file = await signAddon({
+      const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
         apiSecret: options.apiSecret as string,
         addonId: options.addonId as string,
@@ -42,8 +43,9 @@ program
         channel: options.channel as ChannelType,
         distFile: options.distFile as string,
         sourceFile: options.sourceFile as string,
+        output: options.output as string,
       });
-      console.info(file.download_url);
+      console.info(downloadedFile);
     })
   );
 

@@ -45,6 +45,7 @@ export interface SignAddonParam {
   channel?: ChannelType;
   distFile?: string;
   sourceFile?: string;
+  output?: string;
   pollInterval?: number;
   pollRetry?: number;
 }
