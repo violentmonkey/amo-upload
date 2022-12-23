@@ -105,12 +105,16 @@ export class AMOClient {
     addonId: string,
     channel: ChannelType,
     distFile: string,
-    sourceFile?: string
+    sourceFile?: string,
+    approvalNotes?: string
   ) {
     const uploadUuid = await this.uploadFile(distFile, channel);
     const formData = new FormData();
     if (sourceFile) {
       formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
+    }
+    if (approvalNotes) {
+      formData.set('approval_notes', approvalNotes);
     }
     formData.set('upload', uploadUuid);
     const versionInfo: VersionInfo = await this.request(
@@ -126,10 +130,14 @@ export class AMOClient {
   async updateVersion(
     addonId: string,
     versionInfo: VersionInfo,
-    sourceFile: string
+    sourceFile: string,
+    approvalNotes?: string
   ) {
     const formData = new FormData();
     formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
+    if (approvalNotes) {
+      formData.set('approval_notes', approvalNotes);
+    }
     const updated: VersionInfo = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
       {
@@ -222,6 +230,7 @@ export async function signAddon({
   channel = 'listed',
   distFile,
   sourceFile,
+  approvalNotes,
   output,
   pollInterval = 15000,
   pollRetry = 4,
@@ -238,11 +247,22 @@ export async function signAddon({
   if (!signedFile) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
-    await client.createVersion(addonId, channel, distFile, sourceFile);
+    await client.createVersion(
+      addonId,
+      channel,
+      distFile,
+      sourceFile,
+      approvalNotes
+    );
   } else if (sourceFile) {
     const versionInfo = await client.findVersion(addonId, addonVersion);
     if (!versionInfo.source) {
-      await client.updateVersion(addonId, versionInfo, sourceFile);
+      await client.updateVersion(
+        addonId,
+        versionInfo,
+        sourceFile,
+        approvalNotes
+      );
     }
   }
 
