@@ -282,4 +282,5 @@ export async function signAddon({
     );
     return client.downloadFile(signedFile.download_url, output);
   }
+  // TODO: add fallback
 }
