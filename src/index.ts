@@ -266,11 +266,7 @@ export async function signAddon({
     }
   }
 
-  if (!output && channel === 'unlisted') {
-    throw new Error('unlisted addons must have an output');
-  }
-
-  if (output) {
+  if (output || channel === 'unlisted') {
     signedFile = await poll(
       async () => {
         const file = await client.getSignedFile(addonId, addonVersion);
@@ -280,7 +276,7 @@ export async function signAddon({
       pollInterval,
       pollRetry
     );
-    return client.downloadFile(signedFile.download_url, output);
+    return client.downloadFile(signedFile.download_url);
   }
   // TODO: add fallback
 }

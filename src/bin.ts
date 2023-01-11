@@ -35,9 +35,7 @@ program
             missingKeys.join(', ')
         );
       }
-      if (!options.output && options.channel === 'unlisted') {
-        throw new Error('unlisted addons must have an output');
-      }
+
       const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
         apiSecret: options.apiSecret as string,
