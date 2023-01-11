@@ -266,14 +266,16 @@ export async function signAddon({
     }
   }
 
-  signedFile = await poll(
-    async () => {
-      const file = await client.getSignedFile(addonId, addonVersion);
-      if (!file) throw new Error('file not signed yet');
-      return file;
-    },
-    pollInterval,
-    pollRetry
-  );
-  return client.downloadFile(signedFile.download_url, output);
+  if (output) {
+    signedFile = await poll(
+      async () => {
+        const file = await client.getSignedFile(addonId, addonVersion);
+        if (!file) throw new Error('file not signed yet');
+        return file;
+      },
+      pollInterval,
+      pollRetry
+    );
+    return client.downloadFile(signedFile.download_url, output);
+  }
 }
