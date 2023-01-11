@@ -234,7 +234,7 @@ export async function signAddon({
   output,
   pollInterval = 15000,
   pollRetry = 4,
-}: SignAddonParam | undefined) {
+}: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret);
   let signedFile: FileInfo;
 
