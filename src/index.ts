@@ -237,6 +237,7 @@ export async function signAddon({
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret);
   let signedFile: FileInfo;
+  let versionInfo: VersionInfo;
 
   try {
     signedFile = await client.getSignedFile(addonId, addonVersion);
@@ -247,7 +248,7 @@ export async function signAddon({
   if (!signedFile) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
-    await client.createVersion(
+    versionInfo = await client.createVersion(
       addonId,
       channel,
       distFile,
@@ -255,7 +256,7 @@ export async function signAddon({
       approvalNotes
     );
   } else if (sourceFile) {
-    const versionInfo = await client.findVersion(addonId, addonVersion);
+    versionInfo = await client.findVersion(addonId, addonVersion);
     if (!versionInfo.source) {
       await client.updateVersion(
         addonId,
@@ -264,6 +265,11 @@ export async function signAddon({
         approvalNotes
       );
     }
+  }
+  if (!output && channel === 'listed') {
+    return versionInfo.file.url.slice(
+      versionInfo.file.url.lastIndexOf('/') + 1
+    );
   }
 
   signedFile = await poll(
