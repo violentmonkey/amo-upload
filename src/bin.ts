@@ -35,7 +35,6 @@ program
             missingKeys.join(', ')
         );
       }
-
       const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
         apiSecret: options.apiSecret as string,

@@ -272,17 +272,14 @@ export async function signAddon({
     );
   }
 
-  if (output) {
-    signedFile = await poll(
-      async () => {
-        const file = await client.getSignedFile(addonId, addonVersion);
-        if (!file) throw new Error('file not signed yet');
-        return file;
-      },
-      pollInterval,
-      pollRetry
-    );
-    return client.downloadFile(signedFile.download_url);
-  }
-  // TODO: add fallback
+  signedFile = await poll(
+    async () => {
+      const file = await client.getSignedFile(addonId, addonVersion);
+      if (!file) throw new Error('file not signed yet');
+      return file;
+    },
+    pollInterval,
+    pollRetry
+  );
+  return client.downloadFile(signedFile.download_url, output);
 }
