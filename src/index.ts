@@ -266,7 +266,9 @@ export async function signAddon({
     }
   }
 
-  if (output) {
+  if (!output && channel === 'unlisted') {
+    throw new Error('unlisted addons must have an output');
+  } else if (output) {
     signedFile = await poll(
       async () => {
         const file = await client.getSignedFile(addonId, addonVersion);
