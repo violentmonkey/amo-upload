@@ -11,7 +11,7 @@
     "clean": "del-cli dist types",
     "build:types": "tsc -p tsconfig.prod.json",
     "build:js": "cross-env NODE_ENV=production rollup -c rollup.conf.cjs",
-    "build": "run-s ci clean build:types build:js",
+    "build": "run-s ci clean build:*",
     "prepublishOnly": "run-s build",
     "prepare": "husky install"
   },
