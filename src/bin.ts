@@ -48,11 +48,7 @@ program
         sourceFile: options.sourceFile as string,
         output: options.output as string,
       });
-      if (downloadedFile) {
-        console.info(downloadedFile);
-      } else {
-        console.log('Submitted');
-      }
+      console.info(downloadedFile);
     })
   );
 
