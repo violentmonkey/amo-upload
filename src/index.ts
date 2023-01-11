@@ -281,5 +281,5 @@ export async function signAddon({
     pollInterval,
     pollRetry
   );
-  return client.downloadFile(signedFile.download_url);
+  return client.downloadFile(signedFile.download_url, output);
 }
