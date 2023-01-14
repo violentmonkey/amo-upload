@@ -30,7 +30,9 @@ $ npx amo-upload \
   --output path/to/my-ext-v1.2.3.xpi
 ```
 
-If the file is reviewed and signed, the path it is stored will be printed to the console. Otherwise an error will be thrown.
+For `listed` channel, we don't wait for the signed package if no `output` is specified. The output will be the filename of the package.
+
+For `unlisted` channel, we will wait for the package to be signed. After the signed file is downloaded, the path of the downloaded file will be printed to the console. Otherwise an error will be thrown.
 
 ### API
 
