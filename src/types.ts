@@ -40,6 +40,7 @@ export interface UploadResponse {
 export interface SignAddonParam {
   apiKey: string;
   apiSecret: string;
+  apiPrefix: string;
   addonId: string;
   addonVersion: string;
   channel?: ChannelType;
