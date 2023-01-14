@@ -225,6 +225,7 @@ export class AMOClient {
 export async function signAddon({
   apiKey,
   apiSecret,
+  apiPrefix,
   addonId,
   addonVersion,
   channel = 'listed',
@@ -235,7 +236,7 @@ export async function signAddon({
   pollInterval = 15000,
   pollRetry = 4,
 }: SignAddonParam) {
-  const client = new AMOClient(apiKey, apiSecret);
+  const client = new AMOClient(apiKey, apiSecret, apiPrefix);
   let signedFile: FileInfo;
   let versionInfo: VersionInfo;
 

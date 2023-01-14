@@ -5,6 +5,10 @@ import type { ChannelType } from './types';
 program
   .option('--api-key <apiKey>', 'API key from AMO')
   .option('--api-secret <apiSecret>', 'API secret from AMO')
+  .option(
+    '--api-url-prefix <apiPrefix>',
+    'the API URL prefix, https://addons.mozilla.org if unspecified'
+  )
   .option('--addon-id <addonId>', 'addon UUID which can be found in AMO')
   .option('--addon-version <addonVersion>', 'the version to create or query')
   .option(
@@ -38,6 +42,7 @@ program
       const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
         apiSecret: options.apiSecret as string,
+        apiPrefix: options.apiPrefix as string,
         addonId: options.addonId as string,
         addonVersion: options.addonVersion as string,
         channel: options.channel as ChannelType,
