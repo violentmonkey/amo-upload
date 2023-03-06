@@ -105,22 +105,45 @@ export class AMOClient {
     addonId: string,
     channel: ChannelType,
     distFile: string,
-    sourceFile?: string,
-    approvalNotes?: string
+    extra?: {
+      sourceFile?: string;
+      approvalNotes?: string;
+      releaseNotes?: Record<string, string>;
+    }
   ) {
     const uploadUuid = await this.uploadFile(distFile, channel);
-    const formData = new FormData();
-    if (sourceFile) {
-      formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
-    }
-    if (approvalNotes) {
-      formData.set('approval_notes', approvalNotes);
-    }
-    formData.set('upload', uploadUuid);
-    const versionInfo: VersionInfo = await this.request(
+    const { approvalNotes, releaseNotes, sourceFile } = extra || {};
+    let versionInfo: VersionInfo = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/`,
       {
         method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          approval_notes: approvalNotes,
+          release_notes: releaseNotes,
+          upload: uploadUuid,
+        }),
+      }
+    );
+    if (sourceFile) {
+      versionInfo = await this.updateSource(addonId, versionInfo, sourceFile);
+    }
+    return versionInfo;
+  }
+
+  async updateSource(
+    addonId: string,
+    versionInfo: VersionInfo,
+    sourceFile: string
+  ) {
+    const formData = new FormData();
+    formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
+    versionInfo = await this.request(
+      `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
+      {
+        method: 'PATCH',
         body: formData,
       }
     );
@@ -130,22 +153,32 @@ export class AMOClient {
   async updateVersion(
     addonId: string,
     versionInfo: VersionInfo,
-    sourceFile: string,
-    approvalNotes?: string
-  ) {
-    const formData = new FormData();
-    formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
-    if (approvalNotes) {
-      formData.set('approval_notes', approvalNotes);
+    extra: {
+      sourceFile?: string;
+      approvalNotes?: string;
+      releaseNotes?: Record<string, string>;
     }
-    const updated: VersionInfo = await this.request(
-      `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
-      {
-        method: 'PATCH',
-        body: formData,
-      }
-    );
-    return updated;
+  ) {
+    const { approvalNotes, releaseNotes, sourceFile } = extra;
+    if (approvalNotes !== undefined || releaseNotes !== undefined) {
+      versionInfo = await this.request(
+        `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            approval_notes: approvalNotes,
+            release_notes: releaseNotes,
+          }),
+        }
+      );
+    }
+    if (sourceFile) {
+      versionInfo = await this.updateSource(addonId, versionInfo, sourceFile);
+    }
+    return versionInfo;
   }
 
   async getVersions(addonId: string) {
@@ -232,6 +265,7 @@ export async function signAddon({
   distFile,
   sourceFile,
   approvalNotes,
+  releaseNotes,
   output,
   pollInterval = 15000,
   pollRetry = 4,
@@ -249,23 +283,18 @@ export async function signAddon({
   if (!signedFile) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
-    versionInfo = await client.createVersion(
-      addonId,
-      channel,
-      distFile,
+    versionInfo = await client.createVersion(addonId, channel, distFile, {
       sourceFile,
-      approvalNotes
-    );
-  } else if (sourceFile) {
+      approvalNotes,
+      releaseNotes,
+    });
+  } else {
     versionInfo = await client.findVersion(addonId, addonVersion);
-    if (!versionInfo.source) {
-      await client.updateVersion(
-        addonId,
-        versionInfo,
-        sourceFile,
-        approvalNotes
-      );
-    }
+    await client.updateVersion(addonId, versionInfo, {
+      sourceFile,
+      approvalNotes,
+      releaseNotes,
+    });
   }
   if (!output && channel === 'listed') {
     return versionInfo.file.url.slice(

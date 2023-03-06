@@ -24,6 +24,14 @@ program
     '--source-file <sourceFile>',
     'the source file to upload, should be a zip file'
   )
+  .option(
+    '--approval-notes <approvalNotes>',
+    'the information for Mozilla reviewers'
+  )
+  .option(
+    '--release-notes <releaseNotes>',
+    'the release notes for this version'
+  )
   .option('--output <output>', 'the file path to save the signed XPI file')
   .action(
     wrapError(async (options) => {
@@ -48,6 +56,10 @@ program
         channel: options.channel as ChannelType,
         distFile: options.distFile as string,
         sourceFile: options.sourceFile as string,
+        approvalNotes: options.approvalNotes as string,
+        releaseNotes: {
+          'en-US': options.releaseNotes as string,
+        },
         output: options.output as string,
       });
       console.info(downloadedFile);

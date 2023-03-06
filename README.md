@@ -55,3 +55,7 @@ try {
   console.error('File not signed yet');
 }
 ```
+
+## References
+
+- addons-server: https://addons-server.readthedocs.io/en/latest/index.html

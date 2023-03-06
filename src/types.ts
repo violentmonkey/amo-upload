@@ -47,6 +47,7 @@ export interface SignAddonParam {
   distFile?: string;
   sourceFile?: string;
   approvalNotes?: string;
+  releaseNotes?: Record<string, string>;
   output?: string;
   pollInterval?: number;
   pollRetry?: number;
