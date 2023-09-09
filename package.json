@@ -10,7 +10,7 @@
     "types"
   ],
   "engines": {
-    "node": ">= 16"
+    "node": ">=18"
   },
   "bin": "dist/bin.mjs",
   "main": "dist/index.mjs",
@@ -43,8 +43,7 @@
     "commander": "^11.0.0",
     "debug": "^4.3.4",
     "jsonwebtoken": "^9.0.2",
-    "lodash-es": "^4.17.21",
-    "node-fetch": "^3.3.2"
+    "lodash-es": "^4.17.21"
   },
   "devDependencies": {
     "@gera2ld/plaid": "~2.6.0",
