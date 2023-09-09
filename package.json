@@ -24,7 +24,8 @@
   "types": "types/index.d.ts",
   "scripts": {
     "ci": "run-s lint",
-    "lint": "eslint --ext .ts,tsx src",
+    "lint": "eslint --ext .ts,tsx . && prettier --ignore-path .eslintignore -c .",
+    "lint:fix": "eslint --ext .ts,tsx . --fix && prettier --ignore-path .eslintignore -c . -w",
     "dev": "rollup -wc",
     "clean": "del-cli dist types",
     "build:types": "tsc -p tsconfig.prod.json",

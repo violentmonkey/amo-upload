@@ -13,12 +13,14 @@ import type {
   FileInfo,
 } from './types';
 
-class FatalError extends Error {}
+export class FatalError extends Error {}
+
+export class ProcessingError extends Error {}
 
 async function poll<T>(
   check: () => Promise<T>,
-  interval = 3000,
-  maxRetry = 10
+  interval: number,
+  maxRetry: number,
 ) {
   let lastError: unknown;
   for (let i = 0; i < maxRetry; i += 1) {
@@ -45,14 +47,14 @@ export class AMOClient {
   constructor(
     private apiKey: string,
     private apiSecret: string,
-    public apiPrefix = 'https://addons.mozilla.org'
+    public apiPrefix = 'https://addons.mozilla.org',
   ) {
     if (!apiKey || !apiSecret) {
       throw new Error('apiKey and apiSecret are required');
     }
   }
 
-  updateToken(force = false, ttl = 60) {
+  private updateToken(force = false, ttl = 60) {
     const now = Date.now();
     if (this.tokenExpire < now || force) {
       const token = this.getJWT(ttl);
@@ -62,7 +64,7 @@ export class AMOClient {
     }
   }
 
-  fetch(url: string, opts?: RequestInit) {
+  private fetch(url: string, opts?: RequestInit) {
     this.updateToken();
     return fetch(url, {
       ...opts,
@@ -73,7 +75,7 @@ export class AMOClient {
     });
   }
 
-  async request<T = unknown>(url: string, opts?: RequestInit) {
+  private async request<T = unknown>(url: string, opts?: RequestInit) {
     const res = await this.fetch(this.apiPrefix + url, opts);
     const data = (await res.json()) as T;
     if (!res.ok) throw { res, data };
@@ -89,15 +91,34 @@ export class AMOClient {
       {
         method: 'POST',
         body: formData,
-      }
+      },
     );
-    await poll(async () => {
-      const data: UploadResponse = await this.request(
-        `/api/v5/addons/upload/${uuid}/`
+    try {
+      await poll(
+        async () => {
+          const data: UploadResponse = await this.request(
+            `/api/v5/addons/upload/${uuid}/`,
+          );
+          if (!data.processed)
+            throw new ProcessingError(
+              'The uploaded file is still being processed by the validator',
+            );
+          if (!data.valid)
+            throw new FatalError(
+              'The uploaded file is not valid and rejected by the validator',
+            );
+        },
+        5000,
+        24,
       );
-      if (!data.processed) throw new Error('Not processed yet');
-      if (!data.valid) throw new FatalError('Not valid');
-    });
+    } catch (err) {
+      if (err instanceof ProcessingError) {
+        // It takes too long for processing. Since the version is not created yet, we cannot keep the uuid for later use.
+        // So we are not able to resume the process. Throw a fatal error instead.
+        err = new FatalError(err.message);
+      }
+      throw err;
+    }
     return uuid;
   }
 
@@ -109,7 +130,7 @@ export class AMOClient {
       sourceFile?: string;
       approvalNotes?: string;
       releaseNotes?: Record<string, string>;
-    }
+    },
   ) {
     const uploadUuid = await this.uploadFile(distFile, channel);
     const { approvalNotes, releaseNotes, sourceFile } = extra || {};
@@ -125,7 +146,7 @@ export class AMOClient {
           release_notes: releaseNotes,
           upload: uploadUuid,
         }),
-      }
+      },
     );
     if (sourceFile) {
       versionInfo = await this.updateSource(addonId, versionInfo, sourceFile);
@@ -136,7 +157,7 @@ export class AMOClient {
   async updateSource(
     addonId: string,
     versionInfo: VersionInfo,
-    sourceFile: string
+    sourceFile: string,
   ) {
     const formData = new FormData();
     formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
@@ -145,7 +166,7 @@ export class AMOClient {
       {
         method: 'PATCH',
         body: formData,
-      }
+      },
     );
     return versionInfo;
   }
@@ -157,7 +178,7 @@ export class AMOClient {
       sourceFile?: string;
       approvalNotes?: string;
       releaseNotes?: Record<string, string>;
-    }
+    },
   ) {
     const { approvalNotes, releaseNotes, sourceFile } = extra;
     if (approvalNotes !== undefined || releaseNotes !== undefined) {
@@ -172,7 +193,7 @@ export class AMOClient {
             approval_notes: approvalNotes,
             release_notes: releaseNotes,
           }),
-        }
+        },
       );
     }
     if (sourceFile) {
@@ -183,14 +204,14 @@ export class AMOClient {
 
   async getVersions(addonId: string) {
     const result: VersionListResponse = await this.request(
-      `/api/v5/addons/addon/${addonId}/versions/?filter=all_with_unlisted`
+      `/api/v5/addons/addon/${addonId}/versions/?filter=all_with_unlisted`,
     );
     return result;
   }
 
   async getVersionStatus(addonId: string, version: string) {
     const result: VersionStatus = await this.request(
-      `/api/v5/addons/${addonId}/versions/${version}/`
+      `/api/v5/addons/${addonId}/versions/${version}/`,
     );
     return result;
   }
@@ -298,18 +319,18 @@ export async function signAddon({
   }
   if (!output && channel === 'listed') {
     return versionInfo.file.url.slice(
-      versionInfo.file.url.lastIndexOf('/') + 1
+      versionInfo.file.url.lastIndexOf('/') + 1,
     );
   }
 
   signedFile = await poll(
     async () => {
       const file = await client.getSignedFile(addonId, addonVersion);
-      if (!file) throw new Error('file not signed yet');
+      if (!file) throw new ProcessingError('The file has not been signed yet');
       return file;
     },
     pollInterval,
-    pollRetry
+    pollRetry,
   );
   return client.downloadFile(signedFile.download_url, output);
 }

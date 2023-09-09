@@ -7,30 +7,30 @@ program
   .option('--api-secret <apiSecret>', 'API secret from AMO')
   .option(
     '--api-url-prefix <apiPrefix>',
-    'the API URL prefix, https://addons.mozilla.org if unspecified'
+    'the API URL prefix, https://addons.mozilla.org if unspecified',
   )
   .option('--addon-id <addonId>', 'addon UUID which can be found in AMO')
   .option('--addon-version <addonVersion>', 'the version to create or query')
   .option(
     '--channel <channel>',
     'the version channel, either "listed" or "unlisted"',
-    'listed'
+    'listed',
   )
   .option(
     '--dist-file <distFile>',
-    'the dist file to upload, should be a zip file'
+    'the dist file to upload, should be a zip file',
   )
   .option(
     '--source-file <sourceFile>',
-    'the source file to upload, should be a zip file'
+    'the source file to upload, should be a zip file',
   )
   .option(
     '--approval-notes <approvalNotes>',
-    'the information for Mozilla reviewers'
+    'the information for Mozilla reviewers',
   )
   .option(
     '--release-notes <releaseNotes>',
-    'the release notes for this version'
+    'the release notes for this version',
   )
   .option('--output <output>', 'the file path to save the signed XPI file')
   .action(
@@ -44,7 +44,7 @@ program
       if (missingKeys.length) {
         throw new Error(
           'The following options are missing but required: ' +
-            missingKeys.join(', ')
+            missingKeys.join(', '),
         );
       }
       const downloadedFile = await signAddon({
@@ -63,7 +63,7 @@ program
         output: options.output as string,
       });
       console.info(downloadedFile);
-    })
+    }),
   );
 
 program.parse();
