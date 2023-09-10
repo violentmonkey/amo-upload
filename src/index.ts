@@ -1,6 +1,7 @@
 import { createWriteStream } from 'fs';
 import { stat } from 'fs/promises';
 import { basename, join } from 'path';
+import debug from 'debug';
 import fetch, { fileFrom, FormData, RequestInit } from 'node-fetch';
 import jwt from 'jsonwebtoken';
 import type {
@@ -13,12 +14,14 @@ import type {
   FileInfo,
 } from './types';
 
+const log = debug('amo-upload');
+
 export class FatalError extends Error {}
 
 export class ProcessingError extends Error {}
 
 async function poll<T>(
-  check: () => Promise<T>,
+  check: (retry: number) => Promise<T>,
   interval: number,
   maxRetry: number,
 ) {
@@ -26,7 +29,7 @@ async function poll<T>(
   for (let i = 0; i < maxRetry; i += 1) {
     await delay(interval);
     try {
-      return await check();
+      return await check(i);
     } catch (err) {
       lastError = err;
       if (err instanceof FatalError) break;
@@ -83,6 +86,7 @@ export class AMOClient {
   }
 
   async uploadFile(distFile: string, channel: ChannelType) {
+    log('Starting uploadFile %s', distFile);
     const formData = new FormData();
     formData.set('upload', await fileFrom(distFile), basename(distFile));
     formData.set('channel', channel);
@@ -94,8 +98,10 @@ export class AMOClient {
       },
     );
     try {
+      log('Start polling for the upload result');
       await poll(
-        async () => {
+        async (i) => {
+          log('Polling %s', i);
           const data: UploadResponse = await this.request(
             `/api/v5/addons/upload/${uuid}/`,
           );
@@ -119,6 +125,7 @@ export class AMOClient {
       }
       throw err;
     }
+    log('Finished uploadFile %s', distFile);
     return uuid;
   }
 
@@ -134,6 +141,7 @@ export class AMOClient {
   ) {
     const uploadUuid = await this.uploadFile(distFile, channel);
     const { approvalNotes, releaseNotes, sourceFile } = extra || {};
+    log('Starting createVersion');
     let versionInfo: VersionInfo = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/`,
       {
@@ -148,6 +156,7 @@ export class AMOClient {
         }),
       },
     );
+    log('Finished createVersion: %o', versionInfo);
     if (sourceFile) {
       versionInfo = await this.updateSource(addonId, versionInfo, sourceFile);
     }
@@ -159,6 +168,7 @@ export class AMOClient {
     versionInfo: VersionInfo,
     sourceFile: string,
   ) {
+    log('Starting updateSource: %s', sourceFile);
     const formData = new FormData();
     formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
     versionInfo = await this.request(
@@ -168,6 +178,7 @@ export class AMOClient {
         body: formData,
       },
     );
+    log('Finished updateSource: %s', sourceFile);
     return versionInfo;
   }
 
@@ -182,6 +193,7 @@ export class AMOClient {
   ) {
     const { approvalNotes, releaseNotes, sourceFile } = extra;
     if (approvalNotes !== undefined || releaseNotes !== undefined) {
+      log('Starting updateNotes: %s', versionInfo.id);
       versionInfo = await this.request(
         `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
         {
@@ -195,6 +207,7 @@ export class AMOClient {
           }),
         },
       );
+      log('Finished updateNotes: %s', versionInfo.id);
     }
     if (sourceFile) {
       versionInfo = await this.updateSource(addonId, versionInfo, sourceFile);
@@ -323,8 +336,10 @@ export async function signAddon({
     );
   }
 
+  log('Starting polling for the signed file');
   signedFile = await poll(
-    async () => {
+    async (i) => {
+      log('Polling %s', i);
       const file = await client.getSignedFile(addonId, addonVersion);
       if (!file) throw new ProcessingError('The file has not been signed yet');
       return file;

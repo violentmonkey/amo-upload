@@ -41,12 +41,14 @@
   "dependencies": {
     "@babel/runtime": "^7.22.15",
     "commander": "^11.0.0",
+    "debug": "^4.3.4",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@gera2ld/plaid": "~2.6.0",
     "@gera2ld/plaid-rollup": "~2.6.0",
+    "@types/debug": "^4.1.8",
     "@types/jsonwebtoken": "^9.0.2",
     "del-cli": "^5.1.0",
     "husky": "^8.0.3"
