@@ -15,7 +15,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - run: corepack enable
       - uses: actions/setup-node@v3
         with:
-          node-version: '16.x'
-      - run: yarn && yarn ci
+          node-version: '20'
+          cache: "pnpm"
+      - run: pnpm install && pnpm run ci
