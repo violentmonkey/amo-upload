@@ -52,7 +52,10 @@ export interface SignAddonParam {
   releaseNotes?: Record<string, string>;
   output?: string;
   pollInterval?: number;
+  /** Times to check the signed file after creating a new version. */
   pollRetry?: number;
+  /** Times to check the signed file for an existing version. */
+  pollRetryExisting?: number;
 }
 
 export interface FileInfo {

@@ -12,7 +12,6 @@ import type {
   VersionListResponse,
   SignAddonParam,
   VersionStatus,
-  FileInfo,
 } from './types';
 
 const log = debug('amo-upload');
@@ -25,10 +24,11 @@ async function poll<T>(
   check: (retry: number) => Promise<T>,
   interval: number,
   maxRetry: number,
+  immediate = false,
 ) {
-  let lastError: unknown;
+  let lastError: unknown = new Error('Polling not started');
   for (let i = 0; i < maxRetry; i += 1) {
-    await delay(interval);
+    if (!immediate && !i) await delay(interval);
     try {
       return await check(i);
     } catch (err) {
@@ -313,26 +313,14 @@ export async function signAddon({
   approvalNotes,
   releaseNotes,
   output,
-  pollInterval = 15000,
+  pollInterval = 30000,
   pollRetry = 4,
+  pollRetryExisting = 1,
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret, apiPrefix);
-  let signedFile: FileInfo | undefined;
-
-  try {
-    signedFile = await client.getSignedFile(addonId, addonVersion);
-  } catch (err) {
-    switch ((err as { res: Response }).res.status) {
-      case 404:
-        // The version has not been created or the file has not been signed.
-        // Ignore error.
-        break;
-      default:
-        throw err;
-    }
-  }
 
   let versionInfo = await client.findVersion(addonId, addonVersion);
+  const isNewVersion = !versionInfo;
   if (!versionInfo) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
@@ -342,7 +330,7 @@ export async function signAddon({
       releaseNotes,
     });
   } else {
-    await client.updateVersion(addonId, versionInfo, {
+    versionInfo = await client.updateVersion(addonId, versionInfo, {
       sourceFile,
       approvalNotes,
       releaseNotes,
@@ -355,7 +343,7 @@ export async function signAddon({
   }
 
   log('Starting polling for the signed file');
-  signedFile = await poll(
+  const signedFile = await poll(
     async (i) => {
       log('Polling %s', i);
       const file = await client.getSignedFile(addonId, addonVersion);
@@ -363,7 +351,8 @@ export async function signAddon({
       return file;
     },
     pollInterval,
-    pollRetry,
+    isNewVersion ? pollRetry : pollRetryExisting,
+    !isNewVersion,
   );
   return client.downloadFile(signedFile.download_url, output);
 }
