@@ -2,6 +2,7 @@ import { createWriteStream } from 'fs';
 import { stat } from 'fs/promises';
 import { basename, join } from 'path';
 import debug from 'debug';
+import { isEqual } from 'lodash-es';
 import fetch, { fileFrom, FormData, RequestInit } from 'node-fetch';
 import jwt from 'jsonwebtoken';
 import type {
@@ -168,6 +169,10 @@ export class AMOClient {
     versionInfo: VersionInfo,
     sourceFile: string,
   ) {
+    if (versionInfo.source) {
+      log('Source is already uploaded, skipping');
+      return versionInfo;
+    }
     log('Starting updateSource: %s', sourceFile);
     const formData = new FormData();
     formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
@@ -192,7 +197,16 @@ export class AMOClient {
     },
   ) {
     const { approvalNotes, releaseNotes, sourceFile } = extra;
-    if (approvalNotes !== undefined || releaseNotes !== undefined) {
+    let updates: Record<string, unknown> | undefined;
+    if (approvalNotes && approvalNotes !== versionInfo.approval_notes) {
+      updates = { ...updates, approval_notes: approvalNotes };
+    }
+    if (releaseNotes && !isEqual(releaseNotes, versionInfo.release_notes)) {
+      updates = { ...updates, release_notes: releaseNotes };
+    }
+    if (!updates) {
+      log('No update found, skipping patchVersion');
+    } else {
       log('Starting updateNotes: %s', versionInfo.id);
       versionInfo = await this.request(
         `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
@@ -201,10 +215,7 @@ export class AMOClient {
           headers: {
             'content-type': 'application/json',
           },
-          body: JSON.stringify({
-            approval_notes: approvalNotes,
-            release_notes: releaseNotes,
-          }),
+          body: JSON.stringify(updates),
         },
       );
       log('Finished updateNotes: %s', versionInfo.id);
@@ -241,7 +252,7 @@ export class AMOClient {
 
   async findVersion(addonId: string, version: string, firstPageOnly = true) {
     let { results, next } = await this.getVersions(addonId);
-    let matched: VersionInfo;
+    let matched: VersionInfo | undefined;
     while (!matched) {
       matched = results.find((item) => item.version === version);
       if (matched || !next || firstPageOnly) break;
@@ -281,6 +292,7 @@ export class AMOClient {
     }
     const stream = createWriteStream(output);
     await new Promise((resolve, reject) => {
+      if (!res.body) return reject();
       res.body.pipe(stream);
       res.body.on('error', reject);
       stream.on('finish', resolve);
@@ -305,16 +317,23 @@ export async function signAddon({
   pollRetry = 4,
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret, apiPrefix);
-  let signedFile: FileInfo;
-  let versionInfo: VersionInfo;
+  let signedFile: FileInfo | undefined;
 
   try {
     signedFile = await client.getSignedFile(addonId, addonVersion);
   } catch (err) {
-    if (err.res.status !== 404) throw err;
+    switch ((err as { res: Response }).res.status) {
+      case 404:
+        // The version has not been created or the file has not been signed.
+        // Ignore error.
+        break;
+      default:
+        throw err;
+    }
   }
 
-  if (!signedFile) {
+  let versionInfo = await client.findVersion(addonId, addonVersion);
+  if (!versionInfo) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
     versionInfo = await client.createVersion(addonId, channel, distFile, {
@@ -323,7 +342,6 @@ export async function signAddon({
       releaseNotes,
     });
   } else {
-    versionInfo = await client.findVersion(addonId, addonVersion);
     await client.updateVersion(addonId, versionInfo, {
       sourceFile,
       approvalNotes,

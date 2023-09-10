@@ -43,6 +43,7 @@
     "commander": "^11.0.0",
     "debug": "^4.3.4",
     "jsonwebtoken": "^9.0.2",
+    "lodash-es": "^4.17.21",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
@@ -50,6 +51,7 @@
     "@gera2ld/plaid-rollup": "~2.6.0",
     "@types/debug": "^4.1.8",
     "@types/jsonwebtoken": "^9.0.2",
+    "@types/lodash-es": "^4.17.9",
     "del-cli": "^5.1.0",
     "husky": "^8.0.3"
   },

@@ -21,6 +21,8 @@ export interface VersionInfo {
   version: string;
   source: string;
   file: UploadInfo;
+  approval_notes: string;
+  release_notes: Record<string, string> | null;
 }
 
 export interface VersionListResponse {
