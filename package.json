@@ -51,6 +51,7 @@
     "@types/debug": "^4.1.8",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/lodash-es": "^4.17.9",
+    "@types/node": "^20.6.0",
     "del-cli": "^5.1.0",
     "husky": "^8.0.3"
   },

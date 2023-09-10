@@ -37,6 +37,9 @@ devDependencies:
   '@types/lodash-es':
     specifier: ^4.17.9
     version: 4.17.9
+  '@types/node':
+    specifier: ^20.6.0
+    version: 20.6.0
   del-cli:
     specifier: ^5.1.0
     version: 5.1.0
@@ -2019,7 +2022,7 @@ packages:
       '@unocss/core': 0.55.7
       '@unocss/reset': 0.55.7
       '@unocss/vite': 0.55.7(vite@4.4.9)
-      vite: 4.4.9
+      vite: 4.4.9(@types/node@20.6.0)
     transitivePeerDependencies:
       - rollup
     dev: true
@@ -2197,7 +2200,7 @@ packages:
       chokidar: 3.5.3
       fast-glob: 3.3.1
       magic-string: 0.30.3
-      vite: 4.4.9
+      vite: 4.4.9(@types/node@20.6.0)
     transitivePeerDependencies:
       - rollup
     dev: true
@@ -6007,7 +6010,7 @@ packages:
       '@unocss/transformer-directives': 0.55.7
       '@unocss/transformer-variant-group': 0.55.7
       '@unocss/vite': 0.55.7(vite@4.4.9)
-      vite: 4.4.9
+      vite: 4.4.9(@types/node@20.6.0)
     transitivePeerDependencies:
       - postcss
       - rollup
@@ -6047,7 +6050,7 @@ packages:
       spdx-expression-parse: 3.0.1
     dev: true
 
-  /vite@4.4.9:
+  /vite@4.4.9(@types/node@20.6.0):
     resolution: {integrity: sha512-2mbUn2LlUmNASWwSCNSJ/EG2HuSRTnVNaydp6vMCm5VIqJsjMfbIWtbH2kDuwUVW5mMUKKZvGPX/rqeqVvv1XA==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
@@ -6075,6 +6078,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 20.6.0
       esbuild: 0.18.20
       postcss: 8.4.29
       rollup: 3.29.0

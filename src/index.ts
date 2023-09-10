@@ -1,9 +1,11 @@
 import { createWriteStream } from 'fs';
-import { stat } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import { basename, join } from 'path';
 import debug from 'debug';
 import { isEqual } from 'lodash-es';
-import fetch, { fileFrom, FormData, RequestInit } from 'node-fetch';
+import { Readable } from 'stream';
+import type { ReadableStream } from 'stream/web';
+import { finished } from 'stream/promises';
 import jwt from 'jsonwebtoken';
 import type {
   ChannelType,
@@ -40,6 +42,11 @@ async function poll<T>(
 
 function delay(time: number) {
   return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+async function fileFrom(filepath: string) {
+  const buffer = await readFile(filepath);
+  return new Blob([buffer]);
 }
 
 export class AMOClient {
@@ -290,12 +297,7 @@ export class AMOClient {
       output = filename;
     }
     const stream = createWriteStream(output);
-    await new Promise((resolve, reject) => {
-      if (!res.body) return reject();
-      res.body.pipe(stream);
-      res.body.on('error', reject);
-      stream.on('finish', resolve);
-    });
+    await finished(Readable.fromWeb(res.body as ReadableStream).pipe(stream));
     return output;
   }
 }
