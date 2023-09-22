@@ -1,32 +1,26 @@
 export type ChannelType = 'listed' | 'unlisted';
 
-export interface UploadInfo {
+export interface FileInfo {
   id: number;
   created: string;
   is_mozilla_signed_extension: boolean;
-  status:
-    | 'public'
-    | 'deleted'
-    | 'disabled'
-    | 'nominated'
-    | 'incomplete'
-    | 'unreviewed';
+  status: 'public' | 'disabled' | 'unreviewed';
   url: string;
   hash: string;
 }
 
-export interface VersionInfo {
+export interface VersionDetail {
   id: number;
   channel: ChannelType;
   version: string;
-  source: string;
-  file: UploadInfo;
+  source: string | null;
+  file: FileInfo;
   approval_notes: string;
   release_notes: Record<string, string> | null;
 }
 
 export interface VersionListResponse {
-  results: VersionInfo[];
+  results: VersionDetail[];
   next: string;
 }
 
@@ -56,22 +50,4 @@ export interface SignAddonParam {
   pollRetry?: number;
   /** Times to check the signed file for an existing version. */
   pollRetryExisting?: number;
-}
-
-export interface FileInfo {
-  download_url: string;
-  hash: string;
-  signed: boolean;
-}
-
-export interface VersionStatus {
-  guid: string;
-  active: boolean;
-  automated_signing: boolean;
-  files: FileInfo[];
-  passed_review: boolean;
-  processed: boolean;
-  reviewed: string;
-  valid: boolean;
-  version: string;
 }

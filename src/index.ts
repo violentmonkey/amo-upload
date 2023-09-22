@@ -8,10 +8,9 @@ import jwt from 'jsonwebtoken';
 import type {
   ChannelType,
   UploadResponse,
-  VersionInfo,
+  VersionDetail,
   VersionListResponse,
   SignAddonParam,
-  VersionStatus,
 } from './types';
 
 const log = debug('amo-upload');
@@ -143,7 +142,7 @@ export class AMOClient {
     const uploadUuid = await this.uploadFile(distFile, channel);
     const { approvalNotes, releaseNotes, sourceFile } = extra || {};
     log('Starting createVersion');
-    let versionInfo: VersionInfo = await this.request(
+    let versionInfo: VersionDetail = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/`,
       {
         method: 'POST',
@@ -166,7 +165,7 @@ export class AMOClient {
 
   async updateSource(
     addonId: string,
-    versionInfo: VersionInfo,
+    versionInfo: VersionDetail,
     sourceFile: string,
   ) {
     if (versionInfo.source) {
@@ -189,7 +188,7 @@ export class AMOClient {
 
   async updateVersion(
     addonId: string,
-    versionInfo: VersionInfo,
+    versionInfo: VersionDetail,
     extra: {
       sourceFile?: string;
       approvalNotes?: string;
@@ -233,26 +232,26 @@ export class AMOClient {
     return result;
   }
 
-  async getVersionStatus(addonId: string, version: string) {
-    const result: VersionStatus = await this.request(
-      `/api/v5/addons/${addonId}/versions/${version}/`,
+  async getVersion(addonId: string, version: string) {
+    const result: VersionDetail = await this.request(
+      `/api/v5/addons/addon/${addonId}/versions/${version}/`,
     );
     return result;
   }
 
-  getSignedFileFromStatus(versionStatus?: VersionStatus) {
-    const file = versionStatus?.files?.[0];
-    if (file?.signed) return file;
+  getSignedFileFromDetail(detail?: VersionDetail) {
+    const file = detail?.file;
+    if (file?.status === 'public') return file;
   }
 
   async getSignedFile(addonId: string, version: string) {
-    const versionStatus = await this.getVersionStatus(addonId, version);
-    return this.getSignedFileFromStatus(versionStatus);
+    const versionDetail = await this.getVersion(addonId, version);
+    return this.getSignedFileFromDetail(versionDetail);
   }
 
   async findVersion(addonId: string, version: string, firstPageOnly = true) {
     let { results, next } = await this.getVersions(addonId);
-    let matched: VersionInfo | undefined;
+    let matched: VersionDetail | undefined;
     while (!matched) {
       matched = results.find((item) => item.version === version);
       if (matched || !next || firstPageOnly) break;
@@ -354,5 +353,5 @@ export async function signAddon({
     isNewVersion ? pollRetry : pollRetryExisting,
     !isNewVersion,
   );
-  return client.downloadFile(signedFile.download_url, output);
+  return client.downloadFile(signedFile.url, output);
 }
