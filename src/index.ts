@@ -182,7 +182,7 @@ export class AMOClient {
     const formData = new FormData();
     formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
     versionInfo = await this.request(
-      `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
+      `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}/`,
       {
         method: 'PATCH',
         body: formData,
@@ -223,7 +223,7 @@ export class AMOClient {
     } else {
       log('Starting updateNotes: %s', versionInfo.id);
       versionInfo = await this.request(
-        `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}`,
+        `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}/`,
         {
           method: 'PATCH',
           headers: {
