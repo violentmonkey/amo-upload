@@ -199,15 +199,24 @@ export class AMOClient {
       sourceFile?: string;
       approvalNotes?: string;
       releaseNotes?: Record<string, string>;
+      overrideNotes?: boolean;
     },
   ) {
-    const { approvalNotes, releaseNotes, sourceFile } = extra;
+    const { approvalNotes, releaseNotes, sourceFile, overrideNotes } = extra;
     let updates: Record<string, unknown> | undefined;
     if (approvalNotes && approvalNotes !== versionInfo.approval_notes) {
-      updates = { ...updates, approval_notes: approvalNotes };
+      if (versionInfo.approval_notes && !overrideNotes) {
+        log('Skipping approvalNotes as it is not empty');
+      } else {
+        updates = { ...updates, approval_notes: approvalNotes };
+      }
     }
     if (releaseNotes && !isEqual(releaseNotes, versionInfo.release_notes)) {
-      updates = { ...updates, release_notes: releaseNotes };
+      if (versionInfo.release_notes && !overrideNotes) {
+        log('Skipping releaseNotes as it is not empty');
+      } else {
+        updates = { ...updates, release_notes: releaseNotes };
+      }
     }
     if (!updates) {
       log('No update found, skipping patchVersion');
@@ -294,6 +303,7 @@ export async function signAddon({
   sourceFile,
   approvalNotes,
   releaseNotes,
+  overrideNotes,
   output,
   pollInterval = 30000,
   pollRetry = 4,
@@ -316,6 +326,7 @@ export async function signAddon({
       sourceFile,
       approvalNotes,
       releaseNotes,
+      overrideNotes,
     });
   }
   if (!output && channel === 'listed') {

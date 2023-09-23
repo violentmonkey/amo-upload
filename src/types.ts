@@ -39,6 +39,7 @@ export interface SignAddonParam {
   sourceFile?: string;
   approvalNotes?: string;
   releaseNotes?: Record<string, string>;
+  overrideNotes?: boolean;
   output?: string;
   pollInterval?: number;
   /** Times to check the signed file after creating a new version. */
