@@ -11,7 +11,6 @@ import type {
   ChannelType,
   UploadResponse,
   VersionDetail,
-  VersionListResponse,
   SignAddonParam,
 } from './types';
 
@@ -232,13 +231,6 @@ export class AMOClient {
     return versionInfo;
   }
 
-  async getVersions(addonId: string) {
-    const result: VersionListResponse = await this.request(
-      `/api/v5/addons/addon/${addonId}/versions/?filter=all_with_unlisted`,
-    );
-    return result;
-  }
-
   async getVersion(addonId: string, version: string) {
     const result: VersionDetail = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/${version}/`,
@@ -254,17 +246,6 @@ export class AMOClient {
   async getSignedFile(addonId: string, version: string) {
     const versionDetail = await this.getVersion(addonId, version);
     return this.getSignedFileFromDetail(versionDetail);
-  }
-
-  async findVersion(addonId: string, version: string, firstPageOnly = true) {
-    let { results, next } = await this.getVersions(addonId);
-    let matched: VersionDetail | undefined;
-    while (!matched) {
-      matched = results.find((item) => item.version === version);
-      if (matched || !next || firstPageOnly) break;
-      ({ results, next } = await this.request(next));
-    }
-    return matched;
   }
 
   getJWT(ttl: number) {
@@ -320,7 +301,7 @@ export async function signAddon({
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret, apiPrefix);
 
-  let versionInfo = await client.findVersion(addonId, addonVersion);
+  let versionInfo = await client.getVersion(addonId, addonVersion);
   const isNewVersion = !versionInfo;
   if (!versionInfo) {
     if (!distFile)

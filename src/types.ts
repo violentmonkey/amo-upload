@@ -19,11 +19,6 @@ export interface VersionDetail {
   release_notes: Record<string, string> | null;
 }
 
-export interface VersionListResponse {
-  results: VersionDetail[];
-  next: string;
-}
-
 export interface UploadResponse {
   uuid: string;
   channel: ChannelType;
