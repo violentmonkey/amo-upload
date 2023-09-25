@@ -311,18 +311,25 @@ export async function signAddon({
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret, apiPrefix);
 
-  let versionInfo = await client.getVersion(addonId, addonVersion);
-  const isNewVersion = !versionInfo;
-  if (!versionInfo) {
+  let versionDetail: VersionDetail | undefined;
+  try {
+    versionDetail = await client.getVersion(addonId, addonVersion);
+  } catch (err) {
+    if ((err as { res: Response })?.res?.status !== 404) {
+      throw err;
+    }
+  }
+  const isNewVersion = !versionDetail;
+  if (!versionDetail) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
-    versionInfo = await client.createVersion(addonId, channel, distFile, {
+    versionDetail = await client.createVersion(addonId, channel, distFile, {
       sourceFile,
       approvalNotes,
       releaseNotes,
     });
   } else {
-    versionInfo = await client.updateVersion(addonId, versionInfo, {
+    versionDetail = await client.updateVersion(addonId, versionDetail, {
       sourceFile,
       approvalNotes,
       releaseNotes,
@@ -330,8 +337,8 @@ export async function signAddon({
     });
   }
   if (!output && channel === 'listed') {
-    return versionInfo.file.url.slice(
-      versionInfo.file.url.lastIndexOf('/') + 1,
+    return versionDetail.file.url.slice(
+      versionDetail.file.url.lastIndexOf('/') + 1,
     );
   }
 
