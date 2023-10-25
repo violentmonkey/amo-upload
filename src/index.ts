@@ -26,7 +26,7 @@ async function poll<T>(
   maxRetry: number,
   immediate = false,
 ) {
-  let lastError: unknown = new Error('Polling not started');
+  let lastError: unknown = new Error('Polling skipped');
   for (let i = 0; i < maxRetry; i += 1) {
     if (!immediate && !i) await delay(interval);
     try {
