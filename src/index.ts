@@ -12,6 +12,7 @@ import type {
   UploadResponse,
   VersionDetail,
   SignAddonParam,
+  CompatibilityInfo,
 } from './types';
 
 const log = debug('amo-upload');
@@ -140,13 +141,15 @@ export class AMOClient {
     channel: ChannelType,
     distFile: string,
     extra?: {
-      sourceFile?: string;
       approvalNotes?: string;
+      compatibility?: CompatibilityInfo;
       releaseNotes?: Record<string, string>;
+      sourceFile?: string;
     },
   ) {
     const uploadUuid = await this.uploadFile(distFile, channel);
-    const { approvalNotes, releaseNotes, sourceFile } = extra || {};
+    const { approvalNotes, compatibility, releaseNotes, sourceFile } =
+      extra || {};
     log('Starting createVersion');
     let versionInfo: VersionDetail = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/`,
@@ -157,6 +160,7 @@ export class AMOClient {
         },
         body: JSON.stringify({
           approval_notes: approvalNotes,
+          compatibility,
           release_notes: releaseNotes,
           upload: uploadUuid,
         }),
@@ -196,27 +200,27 @@ export class AMOClient {
     addonId: string,
     versionInfo: VersionDetail,
     extra: {
-      sourceFile?: string;
       approvalNotes?: string;
       releaseNotes?: Record<string, string>;
-      overrideNotes?: boolean;
+      sourceFile?: string;
+      override?: boolean;
     },
   ) {
-    const { approvalNotes, releaseNotes, sourceFile, overrideNotes } = extra;
+    const { approvalNotes, releaseNotes, sourceFile, override } = extra;
     let updates: Record<string, unknown> | undefined;
-    if (approvalNotes && approvalNotes !== versionInfo.approval_notes) {
-      if (versionInfo.approval_notes && !overrideNotes) {
-        log('Skipping approvalNotes as it is not empty');
-      } else {
-        updates = { ...updates, approval_notes: approvalNotes };
-      }
+    if (
+      approvalNotes &&
+      approvalNotes !== versionInfo.approval_notes &&
+      override
+    ) {
+      updates = { ...updates, approval_notes: approvalNotes };
     }
-    if (releaseNotes && !isEqual(releaseNotes, versionInfo.release_notes)) {
-      if (versionInfo.release_notes && !overrideNotes) {
-        log('Skipping releaseNotes as it is not empty');
-      } else {
-        updates = { ...updates, release_notes: releaseNotes };
-      }
+    if (
+      releaseNotes &&
+      !isEqual(releaseNotes, versionInfo.release_notes) &&
+      override
+    ) {
+      updates = { ...updates, release_notes: releaseNotes };
     }
     if (!updates) {
       log('No update found, skipping patchVersion');
@@ -303,7 +307,8 @@ export async function signAddon({
   sourceFile,
   approvalNotes,
   releaseNotes,
-  overrideNotes,
+  compatibility,
+  override,
   output,
   pollInterval = 30000,
   pollRetry = 4,
@@ -327,13 +332,14 @@ export async function signAddon({
       sourceFile,
       approvalNotes,
       releaseNotes,
+      compatibility,
     });
   } else {
     versionDetail = await client.updateVersion(addonId, versionDetail, {
       sourceFile,
       approvalNotes,
       releaseNotes,
-      overrideNotes,
+      override,
     });
   }
   if (!output && channel === 'listed') {

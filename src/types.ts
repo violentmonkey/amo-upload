@@ -39,7 +39,8 @@ export interface SignAddonParam {
   sourceFile?: string;
   approvalNotes?: string;
   releaseNotes?: Record<string, string>;
-  overrideNotes?: boolean;
+  compatibility?: CompatibilityInfo;
+  override?: boolean;
   output?: string;
   pollInterval?: number;
   /** Times to check the signed file after creating a new version. */
@@ -47,3 +48,16 @@ export interface SignAddonParam {
   /** Times to check the signed file for an existing version. */
   pollRetryExisting?: number;
 }
+
+export type SupportedApps = 'android' | 'firefox';
+export type CompatibilityInfo =
+  | string[]
+  | Partial<
+      Record<
+        SupportedApps,
+        {
+          min?: string;
+          max?: string;
+        }
+      >
+    >;

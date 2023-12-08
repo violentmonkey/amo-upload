@@ -1,6 +1,6 @@
 import { program } from 'commander';
 import { signAddon } from '.';
-import type { ChannelType } from './types';
+import type { ChannelType, CompatibilityInfo } from './types';
 
 program
   .option('--api-key <apiKey>', 'API key from AMO')
@@ -32,6 +32,10 @@ program
     '--release-notes <releaseNotes>',
     'the release notes for this version',
   )
+  .option(
+    '--compatibility <jsonString>',
+    'the compatibility info as a JSON string, e.g. `["android","firefox"]`',
+  )
   .option('--output <output>', 'the file path to save the signed XPI file')
   .action(
     wrapError(async (options) => {
@@ -60,6 +64,9 @@ program
         releaseNotes: {
           'en-US': options.releaseNotes as string,
         },
+        compatibility: options.compatibility
+          ? (JSON.parse(options.compatibility) as CompatibilityInfo)
+          : undefined,
         output: options.output as string,
       });
       console.info(downloadedFile);
