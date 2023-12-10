@@ -12,13 +12,13 @@
   "engines": {
     "node": ">=18"
   },
-  "bin": "dist/bin.mjs",
-  "main": "dist/index.mjs",
-  "module": "dist/index.mjs",
+  "bin": "dist/bin.js",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "import": "./dist/index.mjs"
+      "import": "./dist/index.js"
     }
   },
   "types": "types/index.d.ts",
