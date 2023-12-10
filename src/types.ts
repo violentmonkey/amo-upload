@@ -1,4 +1,15 @@
 export type ChannelType = 'listed' | 'unlisted';
+export type SupportedApps = 'android' | 'firefox';
+export type CompatibilityMap = Partial<
+  Record<
+    SupportedApps,
+    {
+      min?: string;
+      max?: string;
+    }
+  >
+>;
+export type CompatibilityInfo = string[] | CompatibilityMap;
 
 export interface FileInfo {
   id: number;
@@ -17,6 +28,20 @@ export interface VersionDetail {
   file: FileInfo;
   approval_notes: string;
   release_notes: Record<string, string> | null;
+  compatibility: CompatibilityMap;
+}
+
+export interface VersionListRequest {
+  filter?: 'all_without_unlisted' | 'all_with_unlisted' | 'all_with_deleted';
+  page?: number;
+  page_size?: number;
+}
+
+export interface VersionListResponse {
+  count: number;
+  next: string;
+  previous: string;
+  results: VersionDetail[];
 }
 
 export interface UploadResponse {
@@ -48,16 +73,3 @@ export interface SignAddonParam {
   /** Times to check the signed file for an existing version. */
   pollRetryExisting?: number;
 }
-
-export type SupportedApps = 'android' | 'firefox';
-export type CompatibilityInfo =
-  | string[]
-  | Partial<
-      Record<
-        SupportedApps,
-        {
-          min?: string;
-          max?: string;
-        }
-      >
-    >;

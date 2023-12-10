@@ -41,9 +41,11 @@
   "dependencies": {
     "@babel/runtime": "^7.22.15",
     "commander": "^11.0.0",
+    "console-table-printer": "^2.11.2",
     "debug": "^4.3.4",
     "jsonwebtoken": "^9.0.2",
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "read-package-up": "^11.0.0"
   },
   "devDependencies": {
     "@gera2ld/plaid": "~2.7.0",

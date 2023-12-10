@@ -13,6 +13,8 @@ import type {
   VersionDetail,
   SignAddonParam,
   CompatibilityInfo,
+  VersionListResponse,
+  VersionListRequest,
 } from './types';
 
 const log = debug('amo-upload');
@@ -247,6 +249,18 @@ export class AMOClient {
   async getVersion(addonId: string, version: string) {
     const result: VersionDetail = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/${version}/`,
+    );
+    return result;
+  }
+
+  async getVersions(addonId: string, options?: VersionListRequest) {
+    const search = options
+      ? new URLSearchParams(
+          Object.entries(options).map(([k, v]) => [k, `${v}`]),
+        ).toString()
+      : '';
+    const result: VersionListResponse = await this.request(
+      `/api/v5/addons/addon/${addonId}/versions/?${search}`,
     );
     return result;
   }
