@@ -60,7 +60,11 @@ This command could be run multiple times to check the status, and the version wi
   )
   .option('--output <output>', 'the file path to save the signed XPI file')
   .action(
-    wrapError(async (options) => {
+    wrapError(async (_, command) => {
+      const options = {
+        ...loadFromEnv(),
+        ...command.optsWithGlobals(),
+      };
       verifyKeys(options, ['apiKey', 'apiSecret', 'addonId', 'addonVersion']);
       const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
