@@ -24,6 +24,7 @@ program
     'the API URL prefix, https://addons.mozilla.org if unspecified',
   )
   .option('--addon-id <addonId>', 'addon UUID which can be found in AMO')
+  .configureHelp({ showGlobalOptions: true })
   .version(pkg.packageJson.version);
 
 program
