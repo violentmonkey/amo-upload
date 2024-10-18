@@ -43,8 +43,8 @@
     "commander": "^11.0.0",
     "console-table-printer": "^2.11.2",
     "debug": "^4.3.4",
+    "es-toolkit": "^1.25.2",
     "jsonwebtoken": "^9.0.2",
-    "lodash-es": "^4.17.21",
     "read-package-up": "^11.0.0"
   },
   "devDependencies": {
@@ -52,7 +52,6 @@
     "@gera2ld/plaid-rollup": "~2.7.0",
     "@types/debug": "^4.1.8",
     "@types/jsonwebtoken": "^9.0.2",
-    "@types/lodash-es": "^4.17.9",
     "@types/node": "^20.6.0",
     "del-cli": "^5.1.0",
     "husky": "^8.0.3"
