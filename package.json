@@ -10,7 +10,7 @@
     "types"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "bin": "dist/bin.js",
   "main": "dist/index.js",
