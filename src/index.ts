@@ -1,20 +1,20 @@
+import debug from 'debug';
+import { isEqual } from 'es-toolkit';
 import { createWriteStream } from 'fs';
 import { readFile, stat } from 'fs/promises';
-import { basename, join } from 'path';
-import debug from 'debug';
-import { isEqual } from 'lodash-es';
-import { Readable } from 'stream';
-import type { ReadableStream } from 'stream/web';
-import { finished } from 'stream/promises';
 import jwt from 'jsonwebtoken';
+import { basename, join } from 'path';
+import { Readable } from 'stream';
+import { finished } from 'stream/promises';
+import type { ReadableStream } from 'stream/web';
 import type {
   ChannelType,
+  CompatibilityInfo,
+  SignAddonParam,
   UploadResponse,
   VersionDetail,
-  SignAddonParam,
-  CompatibilityInfo,
-  VersionListResponse,
   VersionListRequest,
+  VersionListResponse,
 } from './types';
 
 const log = debug('amo-upload');
