@@ -1,7 +1,7 @@
-import { dirname } from 'path';
 import { program } from 'commander';
-import { readPackageUp } from 'read-package-up';
 import { Table } from 'console-table-printer';
+import { dirname } from 'node:path';
+import { readPackageUp } from 'read-package-up';
 import { AMOClient, signAddon } from '.';
 import type {
   ChannelType,

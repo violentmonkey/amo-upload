@@ -1,12 +1,13 @@
 import debug from 'debug';
 import { isEqual } from 'es-toolkit';
-import { createWriteStream } from 'fs';
-import { readFile, stat } from 'fs/promises';
 import jwt from 'jsonwebtoken';
-import { basename, join } from 'path';
-import { Readable } from 'stream';
-import { finished } from 'stream/promises';
-import type { ReadableStream } from 'stream/web';
+import { createWriteStream, openAsBlob } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { basename, join } from 'node:path';
+import { Readable } from 'node:stream';
+import { finished } from 'node:stream/promises';
+import type { ReadableStream } from 'node:stream/web';
+import { setTimeout } from 'node:timers/promises';
 import type {
   ChannelType,
   CompatibilityInfo,
@@ -31,7 +32,7 @@ async function poll<T>(
 ) {
   let lastError: unknown = new Error('Polling skipped');
   for (let i = 0; i < maxRetry; i += 1) {
-    if (!immediate || i > 0) await delay(interval);
+    if (!immediate || i > 0) await setTimeout(interval);
     try {
       return await check(i);
     } catch (err) {
@@ -40,15 +41,6 @@ async function poll<T>(
     }
   }
   throw lastError;
-}
-
-function delay(time: number) {
-  return new Promise((resolve) => setTimeout(resolve, time));
-}
-
-async function fileFrom(filepath: string) {
-  const buffer = await readFile(filepath);
-  return new Blob([buffer]);
 }
 
 export class AMOClient {
@@ -97,7 +89,7 @@ export class AMOClient {
   async uploadFile(distFile: string, channel: ChannelType) {
     log('Starting uploadFile %s', distFile);
     const formData = new FormData();
-    formData.set('upload', await fileFrom(distFile), basename(distFile));
+    formData.set('upload', await openAsBlob(distFile), basename(distFile));
     formData.set('channel', channel);
     const { uuid }: UploadResponse = await this.request(
       '/api/v5/addons/upload/',
@@ -127,12 +119,13 @@ export class AMOClient {
         24,
       );
     } catch (err) {
-      if (err instanceof ProcessingError) {
+      let error = err;
+      if (error instanceof ProcessingError) {
         // It takes too long for processing. Since the version is not created yet, we cannot keep the uuid for later use.
         // So we are not able to resume the process. Throw a fatal error instead.
-        err = new FatalError(err.message);
+        error = new FatalError(error.message);
       }
-      throw err;
+      throw error;
     }
     log('Finished uploadFile %s', distFile);
     return uuid;
@@ -186,7 +179,7 @@ export class AMOClient {
     }
     log('Starting updateSource: %s', sourceFile);
     const formData = new FormData();
-    formData.set('source', await fileFrom(sourceFile), basename(sourceFile));
+    formData.set('source', await openAsBlob(sourceFile), basename(sourceFile));
     versionInfo = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}/`,
       {
