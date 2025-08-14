@@ -31,7 +31,7 @@ async function poll<T>(
 ) {
   let lastError: unknown = new Error('Polling skipped');
   for (let i = 0; i < maxRetry; i += 1) {
-    if (!immediate && !i) await delay(interval);
+    if (!immediate || i > 0) await delay(interval);
     try {
       return await check(i);
     } catch (err) {
