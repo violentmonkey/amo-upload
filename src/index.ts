@@ -92,7 +92,8 @@ export class AMOClient {
       if (res.status === 429 && this.extra.throttledRetry && this.extra.throttledRetry > 0) {
         const after = Number(res.headers.get('retry-after'));
         if (!Number.isNaN(after) && after <= this.extra.throttledRetry) {
-          await setTimeout(after * 1000);
+          // wait one more second
+          await setTimeout(after * 1000 + 1000);
           return this.request<T>(url, opts);
         }
       }
