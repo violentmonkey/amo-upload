@@ -71,6 +71,10 @@ This command could be run multiple times to check the status, and the version wi
         ...command.optsWithGlobals(),
       };
       verifyKeys(options, ['apiKey', 'apiSecret', 'addonId', 'addonVersion']);
+      let throttledRetry = Number(options.throttledRetry);
+      if (Number.isNaN(throttledRetry)) {
+        throttledRetry = 0;
+      }
       const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
         apiSecret: options.apiSecret as string,
@@ -87,7 +91,7 @@ This command could be run multiple times to check the status, and the version wi
         compatibility: options.compatibility
           ? (JSON.parse(options.compatibility) as CompatibilityInfo)
           : undefined,
-        throttledRetry: options.throttledRetry as number ?? 0,
+        throttledRetry,
         output: options.output as string,
       });
       console.info(downloadedFile);
