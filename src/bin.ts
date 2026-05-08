@@ -59,6 +59,10 @@ This command could be run multiple times to check the status, and the version wi
     '--compatibility <jsonString>',
     'the compatibility info as a JSON string, e.g. `["android","firefox"]`',
   )
+  .option(
+    '--throttled-retry <maxTime>',
+    'when a 429 throttled error occurs, if a retry is possible within maxTime, the request will wait for a certain period before being re-requested. e.g. 120',
+  )
   .option('--output <output>', 'the file path to save the signed XPI file')
   .action(
     wrapError(async (_, command) => {
@@ -83,6 +87,7 @@ This command could be run multiple times to check the status, and the version wi
         compatibility: options.compatibility
           ? (JSON.parse(options.compatibility) as CompatibilityInfo)
           : undefined,
+        throttledRetry: options.throttledRetry as number ?? 0,
         output: options.output as string,
       });
       console.info(downloadedFile);

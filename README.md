@@ -39,7 +39,8 @@ $ npx amo-upload \
   --addon-version $VERSION \
   --channel listed \
   --dist-file path/to/dist.zip \
-  --source-file path/to/source.zip
+  --source-file path/to/source.zip \
+  --throttled-retry 120 \
   --output path/to/my-ext-v1.2.3.xpi
 ```
 
@@ -75,7 +76,9 @@ try {
     channel: 'listed',
     distFile: 'path/to/dist.zip',
     sourceFile: 'path/to/source.zip',
+    throttledRetry: 120,
     output: 'path/to/my-ext-v1.2.3.xpi',
+    onStatusChange: (status, data) => console.log(status, data),
   });
   console.info('The signed file is stored at:', output);
 } catch (err) {

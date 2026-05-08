@@ -8,14 +8,15 @@ import { Readable } from 'node:stream';
 import { finished } from 'node:stream/promises';
 import type { ReadableStream } from 'node:stream/web';
 import { setTimeout } from 'node:timers/promises';
-import type {
-  ChannelType,
-  CompatibilityInfo,
-  SignAddonParam,
-  UploadResponse,
-  VersionDetail,
-  VersionListRequest,
-  VersionListResponse,
+import {
+  SignAddonStatus,
+  type ChannelType,
+  type CompatibilityInfo,
+  type SignAddonParam,
+  type UploadResponse,
+  type VersionDetail,
+  type VersionListRequest,
+  type VersionListResponse,
 } from './types';
 
 const log = debug('amo-upload');
@@ -43,6 +44,10 @@ async function poll<T>(
   throw lastError;
 }
 
+export interface AMOClientExtra {
+  throttledRetry?: number;
+}
+
 export class AMOClient {
   private headers: Record<string, string> = {};
 
@@ -52,6 +57,7 @@ export class AMOClient {
     private apiKey: string,
     private apiSecret: string,
     public apiPrefix = 'https://addons.mozilla.org',
+    private extra: AMOClientExtra = {},
   ) {
     if (!apiKey || !apiSecret) {
       throw new Error('apiKey and apiSecret are required');
@@ -79,10 +85,19 @@ export class AMOClient {
     });
   }
 
-  private async request<T = unknown>(url: string, opts?: RequestInit) {
+  private async request<T = unknown>(url: string, opts?: RequestInit): Promise<T> {
     const res = await this.fetch(this.apiPrefix + url, opts);
     const data = (await res.json()) as T;
-    if (!res.ok) throw { res, data };
+    if (!res.ok) {
+      if (res.status === 429 &&  this.extra.throttledRetry && this.extra.throttledRetry > 0) {
+        const after = Number(res.headers.get('retry-after'));
+        if (!Number.isNaN(after) && after < this.extra.throttledRetry) {
+          await setTimeout(after * 1000);
+          return this.request<T>(url, opts);
+        }
+      }
+      throw { res, data };
+    }
     return data;
   }
 
@@ -320,10 +335,13 @@ export async function signAddon({
   pollInterval = 30000,
   pollRetry = 4,
   pollRetryExisting = 1,
+  throttledRetry = 0,
+  onStatusChange,
 }: SignAddonParam) {
-  const client = new AMOClient(apiKey, apiSecret, apiPrefix);
+  const client = new AMOClient(apiKey, apiSecret, apiPrefix, { throttledRetry });
 
   let versionDetail: VersionDetail | undefined;
+  onStatusChange?.(SignAddonStatus.BEFORE_GET_VERSION, versionDetail);
   try {
     versionDetail = await client.getVersion(addonId, addonVersion);
   } catch (err) {
@@ -331,23 +349,28 @@ export async function signAddon({
       throw err;
     }
   }
+  onStatusChange?.(SignAddonStatus.AFTER_GET_VERSION, versionDetail);
   const isNewVersion = !versionDetail;
   if (!versionDetail) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
+    onStatusChange?.(SignAddonStatus.BEFORE_CREATE_VERSION, versionDetail);
     versionDetail = await client.createVersion(addonId, channel, distFile, {
       sourceFile,
       approvalNotes,
       releaseNotes,
       compatibility,
     });
+    onStatusChange?.(SignAddonStatus.AFTER_CREATE_VERSION, versionDetail);
   } else {
+    onStatusChange?.(SignAddonStatus.BEFORE_UPDATE_VERSION, versionDetail);
     versionDetail = await client.updateVersion(addonId, versionDetail, {
       sourceFile,
       approvalNotes,
       releaseNotes,
       override,
     });
+    onStatusChange?.(SignAddonStatus.AFTER_UPDATE_VERSION, versionDetail);
   }
   if (!output && channel === 'listed') {
     return versionDetail.file.url.slice(
@@ -356,6 +379,7 @@ export async function signAddon({
   }
 
   log('Starting polling for the signed file');
+  onStatusChange?.(SignAddonStatus.BEFORE_POLL_SIGNED_FILE, versionDetail);
   const signedFile = await poll(
     async (i) => {
       log('Polling %s', i);
@@ -367,5 +391,11 @@ export async function signAddon({
     isNewVersion ? pollRetry : pollRetryExisting,
     !isNewVersion,
   );
-  return client.downloadFile(signedFile.url, output);
+  onStatusChange?.(SignAddonStatus.AFTER_POLL_SIGNED_FILE, signedFile);
+
+  // Download signed file
+  onStatusChange?.(SignAddonStatus.BEFORE_DOWNLOAD_FILE, signedFile);
+  const res = client.downloadFile(signedFile.url, output);
+  onStatusChange?.(SignAddonStatus.AFTER_DOWNLOAD_FILE, res);
+  return res;
 }
