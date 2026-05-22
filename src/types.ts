@@ -53,23 +53,6 @@ export interface UploadResponse {
   validation: object;
 }
 
-export enum SignAddonStatus {
-  BEFORE_GET_VERSION = 'before_get_version',
-  AFTER_GET_VERSION = 'after_get_version',
-  // createVersion
-  BEFORE_CREATE_VERSION = 'before_create_version',
-  AFTER_CREATE_VERSION = 'after_create_version',
-  // updateVersion
-  BEFORE_UPDATE_VERSION = 'before_update_version',
-  AFTER_UPDATE_VERSION = 'after_update_version',
-  // poll signed file
-  BEFORE_POLL_SIGNED_FILE = 'before_poll_signed_file',
-  AFTER_POLL_SIGNED_FILE = 'after_poll_signed_file',
-  // download file
-  BEFORE_DOWNLOAD_FILE = 'before_download_file',
-  AFTER_DOWNLOAD_FILE = 'after_download_file',
-}
-
 export interface SignAddonParam {
   apiKey: string;
   apiSecret: string;
