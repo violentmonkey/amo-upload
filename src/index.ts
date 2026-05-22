@@ -8,15 +8,14 @@ import { Readable } from 'node:stream';
 import { finished } from 'node:stream/promises';
 import type { ReadableStream } from 'node:stream/web';
 import { setTimeout } from 'node:timers/promises';
-import {
-  SignAddonStatus,
-  type ChannelType,
-  type CompatibilityInfo,
-  type SignAddonParam,
-  type UploadResponse,
-  type VersionDetail,
-  type VersionListRequest,
-  type VersionListResponse,
+import type {
+  ChannelType,
+  CompatibilityInfo,
+  SignAddonParam,
+  UploadResponse,
+  VersionDetail,
+  VersionListRequest,
+  VersionListResponse,
 } from './types';
 
 const log = debug('amo-upload');
@@ -337,12 +336,10 @@ export async function signAddon({
   pollRetry = 4,
   pollRetryExisting = 1,
   throttledRetry = 0,
-  onStatusChange,
 }: SignAddonParam) {
   const client = new AMOClient(apiKey, apiSecret, apiPrefix, { throttledRetry });
 
   let versionDetail: VersionDetail | undefined;
-  onStatusChange?.(SignAddonStatus.BEFORE_GET_VERSION, versionDetail);
   try {
     versionDetail = await client.getVersion(addonId, addonVersion);
   } catch (err) {
@@ -350,28 +347,23 @@ export async function signAddon({
       throw err;
     }
   }
-  onStatusChange?.(SignAddonStatus.AFTER_GET_VERSION, versionDetail);
   const isNewVersion = !versionDetail;
   if (!versionDetail) {
     if (!distFile)
       throw new Error('Version not found, please provide distFile');
-    onStatusChange?.(SignAddonStatus.BEFORE_CREATE_VERSION, versionDetail);
     versionDetail = await client.createVersion(addonId, channel, distFile, {
       sourceFile,
       approvalNotes,
       releaseNotes,
       compatibility,
     });
-    onStatusChange?.(SignAddonStatus.AFTER_CREATE_VERSION, versionDetail);
   } else {
-    onStatusChange?.(SignAddonStatus.BEFORE_UPDATE_VERSION, versionDetail);
     versionDetail = await client.updateVersion(addonId, versionDetail, {
       sourceFile,
       approvalNotes,
       releaseNotes,
       override,
     });
-    onStatusChange?.(SignAddonStatus.AFTER_UPDATE_VERSION, versionDetail);
   }
   if (!output && channel === 'listed') {
     return versionDetail.file.url.slice(
@@ -380,7 +372,6 @@ export async function signAddon({
   }
 
   log('Starting polling for the signed file');
-  onStatusChange?.(SignAddonStatus.BEFORE_POLL_SIGNED_FILE, versionDetail);
   const signedFile = await poll(
     async (i) => {
       log('Polling %s', i);
@@ -392,11 +383,7 @@ export async function signAddon({
     isNewVersion ? pollRetry : pollRetryExisting,
     !isNewVersion,
   );
-  onStatusChange?.(SignAddonStatus.AFTER_POLL_SIGNED_FILE, signedFile);
 
   // Download signed file
-  onStatusChange?.(SignAddonStatus.BEFORE_DOWNLOAD_FILE, signedFile);
-  const res = client.downloadFile(signedFile.url, output);
-  onStatusChange?.(SignAddonStatus.AFTER_DOWNLOAD_FILE, res);
-  return res;
+  return client.downloadFile(signedFile.url, output);
 }

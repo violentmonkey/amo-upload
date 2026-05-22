@@ -78,7 +78,6 @@ try {
     sourceFile: 'path/to/source.zip',
     throttledRetry: 120,
     output: 'path/to/my-ext-v1.2.3.xpi',
-    onStatusChange: (status, data) => console.log(status, data),
   });
   console.info('The signed file is stored at:', output);
 } catch (err) {

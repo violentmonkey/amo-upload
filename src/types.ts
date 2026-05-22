@@ -91,6 +91,4 @@ export interface SignAddonParam {
   pollRetryExisting?: number;
   // when a 429 throttled error occurs, if a retry is possible within maxTime, the system will wait until that time before retrying
   throttledRetry?: number;
-  // status change callback
-  onStatusChange?: (status: SignAddonStatus, data?: unknown) => void
 }
