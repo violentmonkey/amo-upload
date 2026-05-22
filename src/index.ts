@@ -41,10 +41,6 @@ async function poll<T>(
   throw lastError;
 }
 
-export interface AMOClientExtra {
-  retryAfterLimit?: number;
-}
-
 export class AMOClient {
   private headers: Record<string, string> = {};
 
