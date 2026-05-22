@@ -35,7 +35,7 @@ export type AMOClientActions =
 
 export interface AMOClientOptions {
   onDebug?: (type: AMOClientActions, payload?: unknown) => void;
-  // when a throttled error occurs, if a retry is possible within this parameter, the system will wait until that time before retrying
+  /** When a throttled error occurs, if a retry is possible within this parameter, the system will wait until that time before retrying. */
   retryAfterLimit?: number;
 }
 
