@@ -1,4 +1,3 @@
-import debug from 'debug';
 import { isEqual } from 'es-toolkit';
 import jwt from 'jsonwebtoken';
 import { createWriteStream, openAsBlob } from 'node:fs';
@@ -9,6 +8,7 @@ import { finished } from 'node:stream/promises';
 import type { ReadableStream } from 'node:stream/web';
 import { setTimeout } from 'node:timers/promises';
 import type {
+  AMOClientOptions,
   ChannelType,
   CompatibilityInfo,
   SignAddonParam,
@@ -17,8 +17,6 @@ import type {
   VersionListRequest,
   VersionListResponse,
 } from './types';
-
-const log = debug('amo-upload');
 
 export class FatalError extends Error {}
 
@@ -51,7 +49,8 @@ export class AMOClient {
   constructor(
     private apiKey: string,
     private apiSecret: string,
-    public apiPrefix = 'https://addons.mozilla.org',
+    public apiUrlPrefix = 'https://addons.mozilla.org',
+    private options: AMOClientOptions = {},
   ) {
     if (!apiKey || !apiSecret) {
       throw new Error('apiKey and apiSecret are required');
@@ -59,12 +58,13 @@ export class AMOClient {
   }
 
   private updateToken(force = false, ttl = 60) {
-    const now = Date.now();
+    const now = Math.floor(Date.now() / 1000);
     if (this.tokenExpire < now || force) {
       const token = this.getJWT(ttl);
       this.headers.Authorization = `JWT ${token}`;
       // Refresh token a few seconds before it really expires
       this.tokenExpire = now + ttl - 10;
+      this.options.onDebug?.('token-update');
     }
   }
 
@@ -80,14 +80,19 @@ export class AMOClient {
   }
 
   private async request<T = unknown>(url: string, opts?: RequestInit) {
-    const res = await this.fetch(this.apiPrefix + url, opts);
+    this.options.onDebug?.('request-start', {
+      method: opts?.method || 'GET',
+      url,
+    });
+    const res = await this.fetch(this.apiUrlPrefix + url, opts);
     const data = (await res.json()) as T;
+    this.options.onDebug?.('request-end', { url, status: res.status });
     if (!res.ok) throw { res, data };
     return data;
   }
 
   async uploadFile(distFile: string, channel: ChannelType) {
-    log('Starting uploadFile %s', distFile);
+    this.options.onDebug?.('upload-file-start', { distFile });
     const formData = new FormData();
     formData.set('upload', await openAsBlob(distFile), basename(distFile));
     formData.set('channel', channel);
@@ -98,11 +103,11 @@ export class AMOClient {
         body: formData,
       },
     );
+    this.options.onDebug?.('upload-file-processing', { uuid });
     try {
-      log('Start polling for the upload result');
       await poll(
         async (i) => {
-          log('Polling %s', i);
+          this.options.onDebug?.('upload-file-poll', { times: i });
           const data: UploadResponse = await this.request(
             `/api/v5/addons/upload/${uuid}/`,
           );
@@ -127,7 +132,7 @@ export class AMOClient {
       }
       throw error;
     }
-    log('Finished uploadFile %s', distFile);
+    this.options.onDebug?.('upload-file-end', { uuid });
     return uuid;
   }
 
@@ -145,7 +150,7 @@ export class AMOClient {
     const uploadUuid = await this.uploadFile(distFile, channel);
     const { approvalNotes, compatibility, releaseNotes, sourceFile } =
       extra || {};
-    log('Starting createVersion');
+    this.options.onDebug?.('create-version-start', { addonId, uploadUuid });
     let versionInfo: VersionDetail = await this.request(
       `/api/v5/addons/addon/${addonId}/versions/`,
       {
@@ -161,7 +166,7 @@ export class AMOClient {
         }),
       },
     );
-    log('Finished createVersion: %o', versionInfo);
+    this.options.onDebug?.('create-version-end', { id: versionInfo.id });
     if (sourceFile) {
       versionInfo = await this.updateSource(addonId, versionInfo, sourceFile);
     }
@@ -174,10 +179,13 @@ export class AMOClient {
     sourceFile: string,
   ) {
     if (versionInfo.source) {
-      log('Source is already uploaded, skipping');
+      this.options.onDebug?.('update-source-skip', { id: versionInfo.id });
       return versionInfo;
     }
-    log('Starting updateSource: %s', sourceFile);
+    this.options.onDebug?.('update-source-start', {
+      id: versionInfo.id,
+      sourceFile,
+    });
     const formData = new FormData();
     formData.set('source', await openAsBlob(sourceFile), basename(sourceFile));
     versionInfo = await this.request(
@@ -187,7 +195,7 @@ export class AMOClient {
         body: formData,
       },
     );
-    log('Finished updateSource: %s', sourceFile);
+    this.options.onDebug?.('update-source-end', { id: versionInfo.id });
     return versionInfo;
   }
 
@@ -218,9 +226,12 @@ export class AMOClient {
       updates = { ...updates, release_notes: releaseNotes };
     }
     if (!updates) {
-      log('No update found, skipping patchVersion');
+      this.options.onDebug?.('update-version-skip', { id: versionInfo.id });
     } else {
-      log('Starting updateNotes: %s', versionInfo.id);
+      this.options.onDebug?.('update-version-start', {
+        id: versionInfo.id,
+        updates,
+      });
       versionInfo = await this.request(
         `/api/v5/addons/addon/${addonId}/versions/${versionInfo.id}/`,
         {
@@ -231,7 +242,7 @@ export class AMOClient {
           body: JSON.stringify(updates),
         },
       );
-      log('Finished updateNotes: %s', versionInfo.id);
+      this.options.onDebug?.('update-version-end', { id: versionInfo.id });
     }
     if (sourceFile) {
       versionInfo = await this.updateSource(addonId, versionInfo, sourceFile);
@@ -268,6 +279,35 @@ export class AMOClient {
     return this.getSignedFileFromDetail(versionDetail);
   }
 
+  async waitForSignedFile(
+    addonId: string,
+    version: string,
+    options: {
+      pollInterval: number;
+      maxRetry: number;
+      immediate?: boolean;
+    },
+  ) {
+    this.options.onDebug?.('wait-start', { addonId, version });
+    const result = await poll(
+      async (i) => {
+        this.options.onDebug?.('wait-poll', { times: i });
+        const file = await this.getSignedFile(addonId, version);
+        if (!file)
+          throw new ProcessingError('The file has not been signed yet');
+        return file;
+      },
+      options.pollInterval,
+      options.maxRetry,
+      options.immediate,
+    );
+    this.options.onDebug?.('wait-end', {
+      id: result.id,
+      status: result.status,
+    });
+    return result;
+  }
+
   getJWT(ttl: number) {
     const issuedAt = Math.floor(Date.now() / 1000);
     const payload = {
@@ -283,6 +323,7 @@ export class AMOClient {
   }
 
   async downloadFile(url: string, output?: string) {
+    this.options.onDebug?.('download-start', { url });
     const res = await this.fetch(url);
     const filename = url.split('/').pop() || 'noname';
     if (output) {
@@ -299,6 +340,7 @@ export class AMOClient {
     }
     const stream = createWriteStream(output);
     await finished(Readable.fromWeb(res.body as ReadableStream).pipe(stream));
+    this.options.onDebug?.('download-end', { url, outFile: output });
     return output;
   }
 }
@@ -306,7 +348,7 @@ export class AMOClient {
 export async function signAddon({
   apiKey,
   apiSecret,
-  apiPrefix,
+  apiUrlPrefix,
   addonId,
   addonVersion,
   channel = 'listed',
@@ -320,8 +362,9 @@ export async function signAddon({
   pollInterval = 30000,
   pollRetry = 4,
   pollRetryExisting = 1,
+  ...clientOptions
 }: SignAddonParam) {
-  const client = new AMOClient(apiKey, apiSecret, apiPrefix);
+  const client = new AMOClient(apiKey, apiSecret, apiUrlPrefix, clientOptions);
 
   let versionDetail: VersionDetail | undefined;
   try {
@@ -355,17 +398,10 @@ export async function signAddon({
     );
   }
 
-  log('Starting polling for the signed file');
-  const signedFile = await poll(
-    async (i) => {
-      log('Polling %s', i);
-      const file = await client.getSignedFile(addonId, addonVersion);
-      if (!file) throw new ProcessingError('The file has not been signed yet');
-      return file;
-    },
+  const signedFile = await client.waitForSignedFile(addonId, addonVersion, {
     pollInterval,
-    isNewVersion ? pollRetry : pollRetryExisting,
-    !isNewVersion,
-  );
-  return client.downloadFile(signedFile.url, output);
+    maxRetry: isNewVersion ? pollRetry : pollRetryExisting,
+    immediate: !isNewVersion,
+  });
+  return await client.downloadFile(signedFile.url, output);
 }
