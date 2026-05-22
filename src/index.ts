@@ -44,7 +44,7 @@ async function poll<T>(
 }
 
 export interface AMOClientExtra {
-  throttledRetry?: number;
+  retryAfterLimit?: number;
 }
 
 export class AMOClient {
@@ -88,9 +88,9 @@ export class AMOClient {
     const res = await this.fetch(this.apiPrefix + url, opts);
     const data = (await res.json()) as T;
     if (!res.ok) {
-      if (res.status === 429 && this.extra.throttledRetry && this.extra.throttledRetry > 0) {
+      if (res.headers.has('retry-after') && this.extra.retryAfterLimit && this.extra.retryAfterLimit > 0) {
         const after = Number(res.headers.get('retry-after'));
-        if (!Number.isNaN(after) && after <= this.extra.throttledRetry) {
+        if (!Number.isNaN(after) && after <= this.extra.retryAfterLimit) {
           // wait one more second
           await setTimeout(after * 1000 + 1000);
           return this.request<T>(url, opts);
@@ -335,9 +335,9 @@ export async function signAddon({
   pollInterval = 30000,
   pollRetry = 4,
   pollRetryExisting = 1,
-  throttledRetry = 0,
+  retryAfterLimit = 0,
 }: SignAddonParam) {
-  const client = new AMOClient(apiKey, apiSecret, apiPrefix, { throttledRetry });
+  const client = new AMOClient(apiKey, apiSecret, apiPrefix, { retryAfterLimit });
 
   let versionDetail: VersionDetail | undefined;
   try {

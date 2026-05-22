@@ -72,6 +72,6 @@ export interface SignAddonParam {
   pollRetry?: number;
   /** Times to check the signed file for an existing version. */
   pollRetryExisting?: number;
-  // when a 429 throttled error occurs, if a retry is possible within maxTime, the system will wait until that time before retrying
-  throttledRetry?: number;
+  // when a throttled error occurs, if a retry is possible within this parameter, the system will wait until that time before retrying
+  retryAfterLimit?: number;
 }

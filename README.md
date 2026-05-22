@@ -40,7 +40,7 @@ $ npx amo-upload \
   --channel listed \
   --dist-file path/to/dist.zip \
   --source-file path/to/source.zip \
-  --throttled-retry 120 \
+  --retry-after-limit 120 \
   --output path/to/my-ext-v1.2.3.xpi
 ```
 
@@ -76,7 +76,7 @@ try {
     channel: 'listed',
     distFile: 'path/to/dist.zip',
     sourceFile: 'path/to/source.zip',
-    throttledRetry: 120,
+    retryAfterLimit: 120,
     output: 'path/to/my-ext-v1.2.3.xpi',
   });
   console.info('The signed file is stored at:', output);

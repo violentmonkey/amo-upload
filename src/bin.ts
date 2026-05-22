@@ -60,8 +60,8 @@ This command could be run multiple times to check the status, and the version wi
     'the compatibility info as a JSON string, e.g. `["android","firefox"]`',
   )
   .option(
-    '--throttled-retry <maxTime>',
-    'when a 429 throttled error occurs, if a retry is possible within maxTime, the request will wait for a certain period before being re-requested. e.g. 120',
+    '--retry-after-limit <maxTime>',
+    'when a throttled error occurs, if a retry is possible within this parameter, the request will wait for a certain period before being re-requested. e.g. 120',
   )
   .option('--output <output>', 'the file path to save the signed XPI file')
   .action(
@@ -71,9 +71,9 @@ This command could be run multiple times to check the status, and the version wi
         ...command.optsWithGlobals(),
       };
       verifyKeys(options, ['apiKey', 'apiSecret', 'addonId', 'addonVersion']);
-      let throttledRetry = Number(options.throttledRetry);
-      if (Number.isNaN(throttledRetry)) {
-        throttledRetry = 0;
+      let retryAfterLimit = Number(options.retryAfterLimit);
+      if (Number.isNaN(retryAfterLimit)) {
+        retryAfterLimit = 0;
       }
       const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
@@ -91,7 +91,7 @@ This command could be run multiple times to check the status, and the version wi
         compatibility: options.compatibility
           ? (JSON.parse(options.compatibility) as CompatibilityInfo)
           : undefined,
-        throttledRetry,
+        retryAfterLimit,
         output: options.output as string,
       });
       console.info(downloadedFile);
