@@ -72,10 +72,6 @@ This command could be run multiple times to check the status, and the version wi
         ...command.optsWithGlobals(),
       };
       verifyKeys(options, ['apiKey', 'apiSecret', 'addonId', 'addonVersion']);
-      let retryAfterLimit = Number(options.retryAfterLimit);
-      if (Number.isNaN(retryAfterLimit)) {
-        retryAfterLimit = 0;
-      }
       const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
         apiSecret: options.apiSecret as string,
@@ -92,7 +88,9 @@ This command could be run multiple times to check the status, and the version wi
         compatibility: options.compatibility
           ? (JSON.parse(options.compatibility) as CompatibilityInfo)
           : undefined,
-        retryAfterLimit,
+        retryAfterLimit: options.retryAfterLimit
+          ? Number(options.retryAfterLimit)
+          : undefined,
         output: options.output as string,
         onDebug: getLogHandler(options.verbose as boolean),
       });
@@ -121,6 +119,9 @@ program
         options.apiSecret,
         options.apiUrlPrefix as string,
         {
+          retryAfterLimit: options.retryAfterLimit
+            ? Number(options.retryAfterLimit)
+            : undefined,
           onDebug: getLogHandler(options.verbose as boolean),
         },
       );
@@ -204,6 +205,7 @@ function loadFromEnv() {
 }
 
 const FRIENDLY_LOGS: Record<string, string> = {
+  'retry-start': 'Rate limit hit, waiting to retry...',
   'upload-file-start': 'Uploading dist file...',
   'create-version-start': 'Creating version...',
   'update-source-start': 'Uploading source file...',

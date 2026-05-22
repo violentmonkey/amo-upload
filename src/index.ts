@@ -22,6 +22,8 @@ export class FatalError extends Error {}
 
 export class ProcessingError extends Error {}
 
+const MAX_RETRIES = 3;
+
 async function poll<T>(
   check: (retry: number) => Promise<T>,
   interval: number,
@@ -79,25 +81,41 @@ export class AMOClient {
     });
   }
 
-  private async request<T = unknown>(url: string, opts?: RequestInit): Promise<T> {
+  private async request<T = unknown>(
+    url: string,
+    opts?: RequestInit,
+    retryCount = 0,
+  ): Promise<T> {
     this.options.onDebug?.('request-start', {
       method: opts?.method || 'GET',
       url,
     });
     const res = await this.fetch(this.apiUrlPrefix + url, opts);
-    const data = (await res.json()) as T;
-    this.options.onDebug?.('request-end', { url, status: res.status });
     if (!res.ok) {
-      if (res.headers.has('retry-after') && this.options.retryAfterLimit && this.options.retryAfterLimit > 0) {
+      if (res.headers.has('retry-after') && retryCount < MAX_RETRIES) {
         const after = Number(res.headers.get('retry-after'));
-        if (!Number.isNaN(after) && after <= this.options.retryAfterLimit) {
+        if (
+          !Number.isNaN(after) &&
+          (!this.options.retryAfterLimit ||
+            after <= this.options.retryAfterLimit)
+        ) {
+          this.options.onDebug?.('retry-start', {
+            url,
+            after,
+            retryCount: retryCount + 1,
+          });
           // wait one more second
           await setTimeout(after * 1000 + 1000);
-          return this.request<T>(url, opts);
+          this.options.onDebug?.('retry-wait', { url });
+          return this.request<T>(url, opts, retryCount + 1);
         }
       }
+      const data = await res.json().catch(() => null);
+      this.options.onDebug?.('request-end', { url, status: res.status });
       throw { res, data };
     }
+    const data = (await res.json()) as T;
+    this.options.onDebug?.('request-end', { url, status: res.status });
     return data;
   }
 

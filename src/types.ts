@@ -15,6 +15,8 @@ export type AMOClientActions =
   | 'token-update'
   | 'request-start'
   | 'request-end'
+  | 'retry-start'
+  | 'retry-wait'
   | 'upload-file-start'
   | 'upload-file-processing'
   | 'upload-file-poll'
