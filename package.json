@@ -23,14 +23,13 @@
   },
   "types": "types/index.d.ts",
   "scripts": {
-    "ci": "pnpm run lint",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "dev": "vite dev",
     "clean": "del-cli dist types",
     "build:types": "tsc",
     "build:js": "vite build",
-    "build": "pnpm run ci && pnpm run clean && pnpm run /^build:/",
+    "build": "pnpm run lint && pnpm run clean && pnpm run /^build:/",
     "prepublishOnly": "pnpm run build",
     "prepare": "husky || true"
   },
@@ -39,24 +38,24 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
-    "commander": "^14.0.0",
-    "console-table-printer": "^2.14.6",
-    "es-toolkit": "^1.39.9",
-    "jsonwebtoken": "^9.0.2",
-    "read-package-up": "^11.0.0"
+    "commander": "^14.0.3",
+    "console-table-printer": "^2.15.0",
+    "es-toolkit": "^1.46.1",
+    "jsonwebtoken": "^9.0.3",
+    "read-package-up": "^12.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.33.0",
+    "@eslint/js": "^10.0.1",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.2.1",
-    "del-cli": "^6.0.0",
-    "eslint": "^9.33.0",
+    "@types/node": "^25.9.1",
+    "del-cli": "^7.0.0",
+    "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
-    "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.39.1",
-    "vite": "^7.1.2"
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.4",
+    "vite": "^8.0.14"
   },
   "repository": "git@github.com:violentmonkey/amo-upload.git"
 }
