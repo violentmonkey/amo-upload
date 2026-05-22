@@ -79,7 +79,7 @@ export class AMOClient {
     });
   }
 
-  private async request<T = unknown>(url: string, opts?: RequestInit) {
+  private async request<T = unknown>(url: string, opts?: RequestInit): Promise<T> {
     this.options.onDebug?.('request-start', {
       method: opts?.method || 'GET',
       url,
@@ -87,7 +87,17 @@ export class AMOClient {
     const res = await this.fetch(this.apiUrlPrefix + url, opts);
     const data = (await res.json()) as T;
     this.options.onDebug?.('request-end', { url, status: res.status });
-    if (!res.ok) throw { res, data };
+    if (!res.ok) {
+      if (res.headers.has('retry-after') && this.options.retryAfterLimit && this.options.retryAfterLimit > 0) {
+        const after = Number(res.headers.get('retry-after'));
+        if (!Number.isNaN(after) && after <= this.options.retryAfterLimit) {
+          // wait one more second
+          await setTimeout(after * 1000 + 1000);
+          return this.request<T>(url, opts);
+        }
+      }
+      throw { res, data };
+    }
     return data;
   }
 
