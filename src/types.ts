@@ -11,6 +11,34 @@ export type CompatibilityMap = Partial<
 >;
 export type CompatibilityInfo = string[] | CompatibilityMap;
 
+export type AMOClientActions =
+  | 'token-update'
+  | 'request-start'
+  | 'request-end'
+  | 'upload-file-start'
+  | 'upload-file-processing'
+  | 'upload-file-poll'
+  | 'upload-file-end'
+  | 'create-version-start'
+  | 'create-version-end'
+  | 'update-source-skip'
+  | 'update-source-start'
+  | 'update-source-end'
+  | 'update-version-skip'
+  | 'update-version-start'
+  | 'update-version-end'
+  | 'wait-start'
+  | 'wait-poll'
+  | 'wait-end'
+  | 'download-start'
+  | 'download-end';
+
+export interface AMOClientOptions {
+  onDebug?: (type: AMOClientActions, payload?: unknown) => void;
+  // when a throttled error occurs, if a retry is possible within this parameter, the system will wait until that time before retrying
+  retryAfterLimit?: number;
+}
+
 export interface FileInfo {
   id: number;
   created: string;
@@ -53,10 +81,10 @@ export interface UploadResponse {
   validation: object;
 }
 
-export interface SignAddonParam {
+export interface SignAddonParam extends AMOClientOptions {
   apiKey: string;
   apiSecret: string;
-  apiPrefix: string;
+  apiUrlPrefix: string;
   addonId: string;
   addonVersion: string;
   channel?: ChannelType;
@@ -72,6 +100,4 @@ export interface SignAddonParam {
   pollRetry?: number;
   /** Times to check the signed file for an existing version. */
   pollRetryExisting?: number;
-  // when a throttled error occurs, if a retry is possible within this parameter, the system will wait until that time before retrying
-  retryAfterLimit?: number;
 }

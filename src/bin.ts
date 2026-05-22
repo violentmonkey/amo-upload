@@ -20,7 +20,7 @@ program
   .option('--api-key <apiKey>', 'API key from AMO')
   .option('--api-secret <apiSecret>', 'API secret from AMO')
   .option(
-    '--api-url-prefix <apiPrefix>',
+    '--api-url-prefix <apiUrlPrefix>',
     'the API URL prefix, https://addons.mozilla.org if unspecified',
   )
   .option('--addon-id <addonId>', 'addon UUID which can be found in AMO')
@@ -64,6 +64,7 @@ This command could be run multiple times to check the status, and the version wi
     'when a throttled error occurs, if a retry is possible within this parameter, the request will wait for a certain period before being re-requested. e.g. 120',
   )
   .option('--output <output>', 'the file path to save the signed XPI file')
+  .option('--verbose', 'show verbose logs')
   .action(
     wrapError(async (_, command) => {
       const options = {
@@ -78,7 +79,7 @@ This command could be run multiple times to check the status, and the version wi
       const downloadedFile = await signAddon({
         apiKey: options.apiKey as string,
         apiSecret: options.apiSecret as string,
-        apiPrefix: options.apiPrefix as string,
+        apiUrlPrefix: options.apiUrlPrefix as string,
         addonId: options.addonId as string,
         addonVersion: options.addonVersion as string,
         channel: options.channel as ChannelType,
@@ -93,6 +94,7 @@ This command could be run multiple times to check the status, and the version wi
           : undefined,
         retryAfterLimit,
         output: options.output as string,
+        onDebug: getLogHandler(options.verbose as boolean),
       });
       console.info(downloadedFile);
     }),
@@ -117,7 +119,10 @@ program
       const client = new AMOClient(
         options.apiKey,
         options.apiSecret,
-        options.apiPrefix,
+        options.apiUrlPrefix as string,
+        {
+          onDebug: getLogHandler(options.verbose as boolean),
+        },
       );
       const page = options.page ?? 1;
       const pageSize = options.pageSize ?? 25;
@@ -194,5 +199,30 @@ function loadFromEnv() {
     apiSecret: process.env.AMO_SECRET,
     apiUrlPrefix: process.env.AMO_URL_PREFIX,
     addonId: process.env.AMO_ADDON_ID,
+    verbose: !!process.env.AMO_VERBOSE,
+  };
+}
+
+const FRIENDLY_LOGS: Record<string, string> = {
+  'upload-file-start': 'Uploading dist file...',
+  'create-version-start': 'Creating version...',
+  'update-source-start': 'Uploading source file...',
+  'update-version-start': 'Updating version notes...',
+  'wait-start': 'Waiting for signed file...',
+  'download-start': 'Downloading...',
+};
+
+function getLogHandler(verbose: boolean) {
+  return (type: string, payload?: unknown) => {
+    const friendly = FRIENDLY_LOGS[type];
+    if (friendly) {
+      console.error(`> ${friendly}`);
+    }
+    if (verbose) {
+      console.error(`[AMOClient] ${type}`);
+      if (payload) {
+        console.dir(payload, { depth: 3, colors: true });
+      }
+    }
   };
 }
